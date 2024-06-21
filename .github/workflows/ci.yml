@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+env:
+  # Show colored output in CI.
+  CARGO_TERM_COLOR: always
+  # Show full panics.
+  RUST_BACKTRACE: "full"
+  # Increase thread stack size to 8 megabytes.
+  RUST_MIN_STACK: 8000000
+  # Fail on documentation warnings.
+  RUSTDOCFLAGS: '-D warnings'
+  # Enable debug information generation for build dependencies.
+  CARGO_PROFILE_DEV_BUILD_OVERRIDE_DEBUG: true
+
+jobs:
+  # Run format separately.
+  #
+  # This will fast-cancel other CI early if this fails.
+  #
+  # `cargo fmt` checks _all_ code, regardless of the OS
+  # or any `#[cfg]`'s, so this only needs to run on Linux.
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - name: Format
+      run: cargo fmt --all --check
+
+  # Run typo checker separately.
+  # This will fast-cancel other CI early if this fails.
+  typo:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Spell Check
+      uses: crate-ci/typos@master
+
+  # All other CI.
+  ci:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+        include:
+          - os: windows-latest
+            rust: stable
+          - os: macos-latest
+            rust: stable
+          - os: ubuntu-latest
+            rust: stable
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: ${{ matrix.rust }}
+        components: clippy
+
+    - name: Cache
+      uses: actions/cache@v4
+      with:
+        path: target
+        key: ${{ matrix.os }}
+
+    - name: Documentation
+      run: cargo doc --workspace --all-features --no-deps
+
+    - name: Clippy (fail on warnings)
+      run: cargo clippy --workspace --all-features --all-targets -- -D warnings
+
+    - name: Test
+      run: cargo test --all-features --workspace
+
+    # TODO: upload binaries with `actions/upload-artifact@v3`
+    - name: Build
+      run: cargo build --all-features --all-targets --workspace
