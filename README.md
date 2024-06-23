@@ -33,9 +33,11 @@ chmod -R 700 ~/.config/moo/ # user-only permissions
 ```
 
 ### 3. Add correct `@moo:monero.social` password to `moo.toml`
-If you don't want to save a password unencrypted to disk, set this environment variable:
+If you don't want to save a password unencrypted to disk, set this environment variable (leading with a space):
 ```bash
-MOO_PASSWORD="$correct_password"
+# There's a space leading this command so
+# it isn't saved in your shell's history file.
+ MOO_PASSWORD="$correct_password" ./moo
 ```
 
 ### 4. Start
@@ -98,4 +100,11 @@ For configuration, see [`moo.toml`](moo.toml).
 | Config                    | `~/.config/moo/moo.toml`
 
 ## Forking
-TODO
+`moo` is hardcoded for Cuprate but it _probably_ works with any account in any room, just edit these [constants](https://github.com/Cuprate/moo/blob/2e2be1abecfac8c75a5a1942dae1f40d880f4756/src/constants.rs):
+- [`MOO_MATRIX_ID`](https://github.com/Cuprate/moo/blob/2e2be1abecfac8c75a5a1942dae1f40d880f4756/src/constants.rs#L62-L64) (your bot's username)
+- [`CUPRATE_GITHUB_PULL`](https://github.com/Cuprate/moo/blob/2e2be1abecfac8c75a5a1942dae1f40d880f4756/src/constants.rs#L18)
+- [`CUPRATE_GITHUB_PULL_API`](https://github.com/Cuprate/moo/blob/2e2be1abecfac8c75a5a1942dae1f40d880f4756/src/constants.rs#L21)
+- [`CUPRATE_MATRIX_ROOM_ID`](https://github.com/Cuprate/moo/blob/2e2be1abecfac8c75a5a1942dae1f40d880f4756/src/constants.rs#L53-L55)
+- [`ALLOWED_MATRIX_IDS_DEFAULT`](https://github.com/Cuprate/moo/blob/2e2be1abecfac8c75a5a1942dae1f40d880f4756/src/constants.rs#L78-L85)
+
+and remove the `allowed_users` in `moo.toml`.
