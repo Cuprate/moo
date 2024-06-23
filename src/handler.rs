@@ -61,13 +61,24 @@ fn filter_message(
         return None;
     };
 
-    if event.content.body().contains("moo") && moo() {
-        info!("Ignoring message, moo is more important");
+    let sender = event.sender;
+    let origin_server_ts = event.origin_server_ts;
+
+    let Some(origin_server_ts) = origin_server_ts.to_system_time() else {
+        warn!("Event UNIX time could not be parsed: {origin_server_ts:#?}");
+        return None;
+    };
+
+    if let Ok(duration) = startup.duration_since(origin_server_ts) {
+        let s = duration.as_secs_f32();
+        info!("Ignoring previous session message: {s}s ago");
         return None;
     }
 
-    let sender = event.sender;
-    let origin_server_ts = event.origin_server_ts;
+    let Ok(timestamp) = origin_server_ts.duration_since(UNIX_EPOCH) else {
+        warn!("Timestamp could not be parsed: {origin_server_ts:#?}");
+        return None;
+    };
 
     // The fact that this is after `moo()` means that there's a
     // chance `moo` `moo()`ing will trigger itself to `moo()` again...
@@ -88,22 +99,6 @@ fn filter_message(
         info!("Ignoring message from non-allowed user: {sender}");
         return None;
     }
-
-    let Some(origin_server_ts) = origin_server_ts.to_system_time() else {
-        warn!("Event UNIX time could not be parsed: {origin_server_ts:#?}");
-        return None;
-    };
-
-    if let Ok(duration) = startup.duration_since(origin_server_ts) {
-        let s = duration.as_secs_f32();
-        info!("Ignoring previous session message: {s}s ago");
-        return None;
-    }
-
-    let Ok(timestamp) = origin_server_ts.duration_since(UNIX_EPOCH) else {
-        warn!("Timestamp could not be parsed: {origin_server_ts:#?}");
-        return None;
-    };
 
     let MessageType::Text(text) = &event.content.msgtype else {
         trace!("Ignoring non-text event");
@@ -146,8 +141,22 @@ async fn handle_command(db: Arc<Database>, command: Command, sender: OwnedUserId
 }
 
 /// For you, moneromooo.
+///
+/// 2024-06-23 update:
+/// 1. very serious monero discussion occurs
+/// 2. `moo` bot joins #cuprate, immediately moos
+///     with a whopping 226 extra o's.
+///
+/// The code that ignores messages from previous sessions
+/// was _after_ checking if `moo()` should happen.
+///
+/// Thinking about it, serious discussion will occur
+/// all the time in #cuprate, and `moo` mooing in those
+/// moments is not a great look, so I'm going to disable
+/// this, sorry moneromooo...
 #[cold]
 #[inline(never)]
+#[allow(dead_code)]
 fn moo() -> bool {
     use rand::prelude::*;
 
