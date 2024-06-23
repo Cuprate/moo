@@ -1,0 +1,47 @@
+#=============#
+# moo.service #
+#=============#
+# This is a relatively hardened systemd user service file for `moo`.
+#
+# - `User=` should be replaced by a restricted user (ideally)
+# - `ExecStart=` should be replaced by the correct path to the `moo` binary
+# - `BindPaths=` should be replaced as well
+
+[Unit]
+Description=moo
+After=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+User=$USER # REPLACE ME
+Type=simple
+ExecStart=/path/to/moo # REPLACE ME
+
+## Wait 35 seconds before sending SIGTERM on exit
+KillSignal=SIGTERM
+TimeoutStopSec=35s
+SendSIGKILL=true
+
+## Hardening
+CapabilityBoundingSet=~CAP_NET_ADMIN CAP_SYS_PTRACE CAP_SYS_ADMIN CAP_KILL CAP_SYS_PACCT CAP_SYS_BOOT CAP_SYS_CHROOT CAP_LEASE CAP_MKNOD CAP_CHOWN CAP_FSETID CAP_SETFCAP CAP_SETUID CAP_SETGID CAP_SETPCAP CAP_SYS_TIME CAP_IPC_LOCK CAP_LINUX_IMMUTABLE CAP_FOWNER CAP_IPC_OWNER CAP_SYS_RESOURCE
+RestrictNamespaces=true
+ProtectHostname=true
+ProtectClock=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectProc=invisible
+ProcSubset=pid
+ProtectControlGroups=true
+ProtectKernelTunables=true
+PrivateUsers=true
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=read-only
+BindPaths=/path/to/moo /home/$USER/.config/moo /home/$USER/.local/share/moo/ # REPLACE ME
+
+[Install]
+WantedBy=default.target

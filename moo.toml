@@ -1,0 +1,59 @@
+#==========#
+# moo.toml #
+#==========#
+# This is `moo`'s config file.
+# It is in the TOML (https://en.wikipedia.org/wiki/TOML) format.
+#
+# Values will be loaded from this file on startup.
+
+
+#----------------------------------------------------------#
+#                           API                            #
+#----------------------------------------------------------#
+# The correct pass for the `@moo:monero.social` account.
+#
+# Any value within the `MOO_PASSWORD` environment
+# variable will override this.
+#
+# TYPE | string
+password = ""
+
+
+#----------------------------------------------------------#
+#                      AUTHORIZATION                       #
+#----------------------------------------------------------#
+# Accounts that `moo` will respond to.
+#
+# TYPE | array of strings, must be fully specified Matrix IDs
+allowed_users = [
+	"@hinto:monero.social",
+	"@boog900:monero.social",
+	"@syntheticbird:monero.social",
+]
+
+
+#----------------------------------------------------------#
+#                        AUTOMATION                        #
+#----------------------------------------------------------#
+# Every `sweeper` seconds, `moo` will
+# automatically run the `!sweep` command.
+#
+# If this is set to `0`, this will be disabled.
+#
+# TYPE | unsigned integer (seconds)
+sweeper = 86400 # 1 day
+
+
+#----------------------------------------------------------#
+#                         LOGGING                          #
+#----------------------------------------------------------#
+# The logging level `moo` will use.
+#
+# "error" will only show critical error messages,
+# "warn" will in addition show warnings,
+# "info" will in addition show info, etc, etc.
+#
+# DEFAULT | "trace"
+# VALUES  | "off", "error", "warn", "info", "debug", "trace"
+# TYPE    | string, one of the above
+log_level = "trace"

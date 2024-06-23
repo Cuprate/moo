@@ -1,0 +1,10 @@
+[default]
+# False positive patterns.
+extend-ignore-identifiers-re = [
+]
+
+[files]
+# False positive files.
+extend-exclude = [
+	"src/command/parse.rs"
+]
