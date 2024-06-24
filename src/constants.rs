@@ -20,6 +20,20 @@ pub const CUPRATE_GITHUB_PULL: &str = "https://github.com/Cuprate/cuprate/pull";
 /// TODO
 pub const CUPRATE_GITHUB_PULL_API: &str = "https://api.github.com/repos/Cuprate/cuprate/pulls";
 
+/// TODO
+pub const MONERO_META_GITHUB_ISSUE_API: &str =
+    "https://api.github.com/repos/monero-project/meta/issues";
+
+/// TODO
+pub const MONERO_META_GITHUB_ISSUE: &str = "https://github.com/monero-project/meta/issues";
+
+// /// TODO
+// pub const MONERO_META_GITHUB_ISSUE_API: &str =
+//     "https://api.github.com/repos/hinto-janai/labeler-test/issues";
+
+// /// TODO
+// pub const MONERO_META_GITHUB_ISSUE: &str = "https://github.com/hinto-janai/labeler-test/issues";
+
 //---------------------------------------------------------------------------------------------------- Version
 /// Build commit.
 ///
@@ -54,7 +68,7 @@ pub const MOO_USER_AGENT: &str = concat!("moo", "/", env!("CARGO_PKG_VERSION"),)
 pub static CUPRATE_MATRIX_ROOM_ID: Lazy<OwnedRoomId> =
     Lazy::new(|| RoomId::parse("!zPLCnZSsyeFFxUiqUZ:monero.social").unwrap());
 
-// // Test Matrix room ID.
+// /// Test Matrix room ID.
 // pub static CUPRATE_MATRIX_ROOM_ID: Lazy<OwnedRoomId> =
 //     Lazy::new(|| RoomId::parse("!SrjNVhHuHOWcFfYRfj:monero.social").unwrap());
 
@@ -87,6 +101,9 @@ pub static ALLOWED_MATRIX_IDS_DEFAULT: Lazy<Vec<OwnedUserId>> = Lazy::new(|| {
 //---------------------------------------------------------------------------------------------------- Misc
 /// TODO
 pub const MOO_PASSWORD_ENV_VAR: &str = "MOO_PASSWORD";
+
+/// TODO
+pub const MOO_GITHUB_TOKEN_ENV_VAR: &str = "MOO_GITHUB_TOKEN";
 
 /// TODO
 pub const DEFAULT_LOG_LEVEL: tracing::Level = tracing::Level::TRACE;
@@ -154,9 +171,38 @@ pub const HELP: &str = r"| Command                        | Description |
 | `!sweep`                       | Remove any PRs in the queue that can be removed (since they were merged).
 | `!sweeper`                     | Report how long before an automatic `!sweep` occurs.
 | `!clear`                       | Clear the entire queue.
+| `!meeting`                     | Begin/end Cuprate meetings. Issues/logs will be handled automatically after ending.
+| `!agenda <ARRAY_OF_STRINGS>`   | Re-write the current Cuprate meeting's extra agenda items.
 | `!status`                      | Report `moo` status.
 | `!help`                        | Print all `moo` commands.
 | `!shutdown`                    | Shutdown `moo`.";
+
+/// TODO
+pub const TXT_CUPRATE_MEETING_PREFIX: &str = "[Cuprate](https://github.com/Cuprate/cuprate) is an effort to create an alternative Monero node implementation.
+
+Location: [Libera.chat, #cuprate](https://libera.chat/) | [Matrix](https://matrix.to/#/#cuprate:monero.social?via=matrix.org&via=monero.social)
+
+Note that there are currently communication issues with Matrix accounts created on the matrix.org server, consider using a different homeserver to see messages.
+
+[Join the Monero Matrix server if you don't already have a Matrix account](https://www.getmonero.org/resources/user-guides/join-monero-matrix.html)
+
+Time: 18:00 UTC [Check in your timezone](https://www.timeanddate.com/worldclock/converter.html)
+
+Moderator: @boog900
+
+Please comment on GitHub in advance of the meeting if you would like to propose a discussion topic.
+
+Main discussion topics:
+
+- Greetings
+- Updates: What is everyone working on?
+- Project: What is next for Cuprate?";
+
+/// TODO
+pub const TXT_CUPRATE_MEETING_SUFFIX: &str = "- Any other business";
+
+/// TODO
+pub const TXT_MEETING_START_IDENT: &str = "Recording meeting logs...";
 
 //---------------------------------------------------------------------------------------------------- Statics
 // These are accessed everywhere and replace function inputs.

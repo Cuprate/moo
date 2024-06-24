@@ -35,6 +35,7 @@ The structure of folders & files.
 | `handler.rs`      | Matrix room event handler, i.e. when a message is received, what to do?
 | `logger.rs`       | Logging init.
 | `main.rs`         | Init and `main()`.
+| `meeting.rs`      | Cuprate meeting handler.
 | `panic.rs`        | Custom panic handler.
 | `priority.rs`     | `Priority` enum.
 | `pull_request.rs` | Pull request types.

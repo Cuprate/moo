@@ -2,7 +2,7 @@
 
 //---------------------------------------------------------------------------------------------------- Use
 use std::{
-    sync::Arc,
+    sync::{atomic::Ordering, Arc},
     time::{SystemTime, UNIX_EPOCH},
 };
 
@@ -12,9 +12,12 @@ use tracing::{info, instrument, trace};
 
 use crate::{
     command::Command,
-    constants::{CONFIG, CUPRATE_GITHUB_PULL, HELP, INIT_INSTANT, MOO, TXT_EMPTY},
+    constants::{
+        CONFIG, CUPRATE_GITHUB_PULL, HELP, INIT_INSTANT, MOO, TXT_EMPTY, TXT_MEETING_START_IDENT,
+    },
     database::Database,
     github::pr_is_open,
+    meeting::{MEETING_DATABASE, MEETING_ONGOING},
     priority::Priority,
     pull_request::{PullRequest, PullRequestMetadata},
 };
@@ -58,6 +61,8 @@ impl Command {
                 Self::Sweep => Self::handle_sweep(db).await,
                 Self::Sweeper => Self::handle_sweeper(db).await,
                 Self::Clear => Self::handle_clear(db).await,
+                Self::Meeting => Self::handle_meeting().await,
+                Self::Agenda(items) => Self::handle_agenda(items).await,
                 Self::Status => Self::handle_status(),
                 Self::Help => Self::handle_help(),
                 Self::Shutdown => Self::handle_shutdown(db).await,
@@ -308,11 +313,49 @@ impl Command {
 
     /// TODO
     #[instrument]
+    async fn handle_meeting() -> RoomMessageEventContent {
+        let msg = if MEETING_ONGOING.load(Ordering::Acquire) {
+            let mut logs = String::new();
+            let mut db = MEETING_DATABASE.lock().await;
+            std::mem::swap(&mut logs, &mut db);
+
+            MEETING_ONGOING.store(false, Ordering::Release);
+
+            match crate::github::finish_cuprate_meeting(logs).await {
+                Ok((logs, next_meeting)) => {
+                    format!("- Logs: {logs}\n - Next meeting: {next_meeting}")
+                }
+                Err(e) => e.to_string(),
+            }
+        } else {
+            let mut db = MEETING_DATABASE.lock().await;
+            *db = String::from("## Meeting logs");
+            MEETING_ONGOING.store(true, Ordering::Release);
+            TXT_MEETING_START_IDENT.to_string()
+        };
+
+        trace!(msg);
+        RoomMessageEventContent::text_markdown(msg)
+    }
+
+    /// TODO
+    async fn handle_agenda(items: Vec<String>) -> RoomMessageEventContent {
+        let msg = match crate::github::edit_cuprate_meeting_agenda(items).await {
+            Ok(url) => format!("Updated: {url}"),
+            Err(e) => e.to_string(),
+        };
+        trace!(msg);
+        RoomMessageEventContent::text_plain(msg)
+    }
+
+    /// TODO
+    #[instrument]
     fn handle_status() -> RoomMessageEventContent {
         let elapsed = INIT_INSTANT.elapsed().as_secs_f32();
-
         let uptime = UptimeFull::from(elapsed).to_string();
-        let msg = format!("{MOO}, uptime: {uptime}");
+        let meeting = MEETING_ONGOING.load(Ordering::Acquire);
+
+        let msg = format!("{MOO}, meeting: {meeting}, uptime: {uptime}");
 
         trace!(msg);
         RoomMessageEventContent::text_markdown(msg)

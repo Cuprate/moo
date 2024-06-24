@@ -1,6 +1,6 @@
 [package]
 name           = "moo"
-version        = "0.0.2"
+version        = "0.0.3"
 edition        = "2021"
 authors        = ["hinto-janai"]
 repository     = "https://github.com/Cuprate/moo"
@@ -11,6 +11,7 @@ description    = "Matrix bot for Cuprate"
 
 [dependencies]
 anyhow             = { version = "1.0.86" }
+chrono             = { version = "0.4.38" }
 const_format       = { version = "0.2.32" }
 dirs               = { version = "5.0.1" }
 matrix-sdk         = { version = "0.7.1", features = ["markdown", "anyhow"] }

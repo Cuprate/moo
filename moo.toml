@@ -8,7 +8,7 @@
 
 
 #----------------------------------------------------------#
-#                           API                            #
+#                     AUTHENTICATION                       #
 #----------------------------------------------------------#
 # The correct pass for the `@moo:monero.social` account.
 #
@@ -17,6 +17,15 @@
 #
 # TYPE | string
 password = ""
+
+# A valid GitHub API token (with all permissions)
+# for <https://github.com/moo900>.
+#
+# Any value within the `MOO_GITHUB_TOKEN` environment
+# variable will override this.
+#
+# TYPE | string
+token = ""
 
 
 #----------------------------------------------------------#

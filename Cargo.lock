@@ -1939,9 +1939,10 @@ dependencies = [
 
 [[package]]
 name = "moo"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "anyhow",
+ "chrono",
  "const_format",
  "dirs",
  "matrix-sdk",

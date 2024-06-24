@@ -6,7 +6,8 @@ use matrix_sdk::ruma::OwnedUserId;
 use serde::{Deserialize, Serialize};
 
 use crate::constants::{
-    ALLOWED_MATRIX_IDS_DEFAULT, CONFIG_PATH, MOO_CONFIG_PATH, MOO_MATRIX_ID, MOO_PASSWORD_ENV_VAR,
+    ALLOWED_MATRIX_IDS_DEFAULT, CONFIG_PATH, MOO_CONFIG_PATH, MOO_GITHUB_TOKEN_ENV_VAR,
+    MOO_MATRIX_ID, MOO_PASSWORD_ENV_VAR,
 };
 
 //----------------------------------------------------------------------------------------------------
@@ -16,6 +17,10 @@ pub struct Config {
     /// TODO
     #[serde(default = "default_password")]
     pub password: String,
+
+    /// TODO
+    #[serde(default = "default_password")]
+    pub token: String,
 
     /// TODO
     #[serde(default = "default_allowed_users")]
@@ -34,6 +39,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             password: default_password(),
+            token: default_password(),
             allowed_users: default_allowed_users(),
             sweeper: default_sweeper(),
             log_level: default_log_level(),
@@ -72,6 +78,15 @@ impl Config {
 
         if this.password.is_empty() {
             return Err(anyhow!("`{}` password was empty", &*MOO_MATRIX_ID));
+        }
+
+        if let Ok(token) = std::env::var(MOO_GITHUB_TOKEN_ENV_VAR) {
+            println!("Using environment variable: `{MOO_GITHUB_TOKEN_ENV_VAR}`");
+            this.token = token;
+        }
+
+        if this.token.is_empty() {
+            eprintln!("GitHub token was empty, API access will not work...!");
         }
 
         Ok(this)

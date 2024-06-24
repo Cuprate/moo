@@ -107,6 +107,7 @@ pub mod free;
 pub mod github;
 pub mod handler;
 pub mod logger;
+pub mod meeting;
 pub mod panic;
 pub mod priority;
 pub mod pull_request;
@@ -155,6 +156,16 @@ async fn main() {
     } else {
         info!("Sweeper: looping every {} seconds", CONFIG.sweeper);
         sweeper::spawn_sweeper(Arc::clone(&db), CONFIG.sweeper);
+    }
+
+    // Spawn meeting.
+    if CONFIG.token.is_empty() {
+        info!("Skipping meeting handler");
+    } else {
+        info!("Registering meeting handler");
+        CLIENT.add_event_handler(move |event: SyncRoomMessageEvent| {
+            meeting::meeting_handler(startup, event)
+        });
     }
 
     // Hang forever (until error).

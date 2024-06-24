@@ -1,14 +1,17 @@
 //! TODO
 
 //---------------------------------------------------------------------------------------------------- Use
-
 use anyhow::anyhow;
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use serde_json::from_str;
-use tracing::{instrument, trace};
+use serde_json::{from_str, json};
+use tracing::{info, instrument, trace};
 
 use crate::{
-    constants::{CUPRATE_GITHUB_PULL_API, MOO_USER_AGENT},
+    constants::{
+        CONFIG, CUPRATE_GITHUB_PULL_API, MONERO_META_GITHUB_ISSUE_API, MOO_USER_AGENT,
+        TXT_CUPRATE_MEETING_PREFIX, TXT_CUPRATE_MEETING_SUFFIX,
+    },
     pull_request::{PullRequest, PullRequestError},
 };
 
@@ -79,5 +82,357 @@ pub async fn pr_is_open(pr: PullRequest) -> Result<bool, PullRequestError> {
             pr,
             anyhow!("failed to parse GitHub response"),
         )),
+    }
+}
+
+//---------------------------------------------------------------------------------------------------- Issues
+/// TODO
+///
+/// # Errors
+/// TODO
+#[instrument]
+#[inline]
+pub async fn finish_cuprate_meeting(
+    meeting_logs: String,
+) -> Result<(String, String), anyhow::Error> {
+    let client = reqwest::ClientBuilder::new()
+        .gzip(true)
+        .user_agent(MOO_USER_AGENT)
+        .build()?;
+
+    let (issue, title) = find_cuprate_meeting_issue(&client, false).await?;
+    let logs = post_comment_in_issue(&client, issue, meeting_logs).await?;
+    let next_meeting = post_cuprate_meeting_issue(&client, title, issue).await?;
+    close_issue(&client, issue).await?;
+
+    Ok((logs, next_meeting))
+}
+
+/// TODO
+///
+/// # Errors
+/// TODO
+#[instrument]
+#[inline]
+pub async fn find_cuprate_meeting_issue(
+    client: &Client,
+    find_last_issue: bool,
+) -> Result<(u64, String), anyhow::Error> {
+    trace!("Finding Cuprate meeting issue on: {MONERO_META_GITHUB_ISSUE_API}");
+
+    let body = client
+        .get(MONERO_META_GITHUB_ISSUE_API)
+        .header("Accept", "application/vnd.github+json")
+        .header("X-GitHub-Api-Version", "2022-11-28")
+        .header("Authorization", format!("Bearer {}", CONFIG.token))
+        .query(&[("state", "all")])
+        .send()
+        .await?
+        .text()
+        .await?;
+
+    trace!("reply: {body}");
+
+    /// TODO
+    #[derive(Debug, Serialize, Deserialize)]
+    struct Response {
+        /// TODO
+        number: u64,
+        /// TODO
+        title: String,
+        /// TODO
+        user: User,
+    }
+
+    /// TODO
+    #[derive(Debug, Serialize, Deserialize)]
+    struct User {
+        /// TODO
+        login: String,
+    }
+
+    let responses = from_str::<Vec<Response>>(&body)?;
+    trace!("responses: {responses:#?}");
+
+    let mut second = false;
+    for resp in responses {
+        if ["boog900", "moo900"].contains(&resp.user.login.as_str())
+            && resp.title.contains("Cuprate Meeting")
+        {
+            if find_last_issue {
+                if second {
+                    return Ok((resp.number, resp.title));
+                }
+                second = true;
+                continue;
+            }
+
+            return Ok((resp.number, resp.title));
+        }
+    }
+
+    Err(anyhow!("Error: couldn't find Cuprate Meeting issue"))
+}
+
+/// TODO
+///
+/// # Errors
+/// TODO
+#[instrument]
+#[inline]
+pub async fn post_cuprate_meeting_issue(
+    client: &Client,
+    previous_meeting_title: String,
+    last_issue: u64,
+) -> Result<String, anyhow::Error> {
+    trace!("Posting Cuprate meeting issue on: {MONERO_META_GITHUB_ISSUE_API}");
+
+    let next_meeting_iso_8601 = {
+        use chrono::{prelude::*, Days, Weekday};
+
+        let mut today = Utc::now().date_naive();
+
+        while today.weekday() == Weekday::Tue {
+            println!("{today}");
+            today = today + Days::new(1);
+        }
+
+        while today.weekday() != Weekday::Tue {
+            println!("{today}");
+            today = today + Days::new(1);
+        }
+
+        today.format("%Y-%m-%d").to_string()
+    };
+
+    let next_meeting_number = {
+        let mut iter = previous_meeting_title.split_whitespace();
+
+        let err = || anyhow!("Failed to parse previous meeting title: {previous_meeting_title}");
+
+        if !iter.next().is_some_and(|s| s == "Cuprate") {
+            return Err(err());
+        }
+
+        if !iter.next().is_some_and(|s| s == "Meeting") {
+            return Err(err());
+        }
+
+        let Some(number_with_hash) = iter.next() else {
+            return Err(err());
+        };
+
+        let Some(number) = number_with_hash.get(1..) else {
+            return Err(err());
+        };
+
+        let Ok(number) = number.parse::<u64>() else {
+            return Err(err());
+        };
+
+        number + 1
+    };
+
+    let title = format!(
+        "Cuprate Meeting #{next_meeting_number} - Tuesday, {next_meeting_iso_8601}, UTC 18:00"
+    );
+
+    info!("Meeting title: {title}");
+
+    let body = format!("{TXT_CUPRATE_MEETING_PREFIX}\n{TXT_CUPRATE_MEETING_SUFFIX}\n\nPrevious meeting with logs: #{last_issue}");
+
+    let body = json!({
+        "title": title,
+        "body": body,
+    });
+
+    info!("Posting issue: {body}");
+
+    let body = client
+        .post(MONERO_META_GITHUB_ISSUE_API)
+        .header("Accept", "application/vnd.github+json")
+        .header("X-GitHub-Api-Version", "2022-11-28")
+        .header("Authorization", format!("Bearer {}", CONFIG.token))
+        .body(body.to_string())
+        .send()
+        .await?
+        .text()
+        .await?;
+
+    trace!("reply: {body}");
+
+    /// TODO
+    #[derive(Serialize, Deserialize)]
+    struct Response {
+        /// TODO
+        html_url: String,
+    }
+
+    match from_str::<Response>(&body) {
+        Ok(resp) => Ok(resp.html_url),
+        Err(e) => Err(anyhow!("Posting issue error: {e}")),
+    }
+}
+
+/// TODO
+///
+/// # Errors
+/// TODO
+#[instrument]
+#[inline]
+pub async fn post_comment_in_issue(
+    client: &Client,
+    issue: u64,
+    comment: String,
+) -> Result<String, anyhow::Error> {
+    let url = format!("{MONERO_META_GITHUB_ISSUE_API}/{issue}/comments");
+
+    trace!("Posting comment on: {url}");
+
+    let body = client
+        .post(url)
+        .header("Accept", "application/vnd.github+json")
+        .header("X-GitHub-Api-Version", "2022-11-28")
+        .header("Authorization", format!("Bearer {}", CONFIG.token))
+        .body(json!({"body":comment}).to_string())
+        .send()
+        .await?
+        .text()
+        .await?;
+
+    trace!("Issue comment: {body}");
+
+    /// TODO
+    #[derive(Serialize, Deserialize)]
+    struct Response {
+        /// TODO
+        html_url: String,
+    }
+
+    match from_str::<Response>(&body) {
+        Ok(resp) => {
+            if resp.html_url.is_empty() {
+                Err(anyhow!("Issue comment error: {body:#?}"))
+            } else {
+                Ok(resp.html_url)
+            }
+        }
+        Err(e) => return Err(anyhow!("Issue comment error: {e}")),
+    }
+}
+
+/// TODO
+///
+/// # Errors
+/// TODO
+#[instrument]
+#[inline]
+pub async fn close_issue(client: &Client, issue: u64) -> Result<(), anyhow::Error> {
+    let url = format!("{MONERO_META_GITHUB_ISSUE_API}/{issue}");
+
+    trace!("Closing issue: {url}");
+
+    let body = json!({
+        "state": "closed"
+    });
+
+    let body = client
+        .patch(url)
+        .header("Accept", "application/vnd.github+json")
+        .header("X-GitHub-Api-Version", "2022-11-28")
+        .header("Authorization", format!("Bearer {}", CONFIG.token))
+        .body(body.to_string())
+        .send()
+        .await?
+        .text()
+        .await?;
+
+    trace!("reply: {body}");
+
+    /// TODO
+    #[derive(Serialize, Deserialize)]
+    struct Response {
+        /// TODO
+        number: u64,
+        /// TODO
+        state: String,
+    }
+
+    match from_str::<Response>(&body) {
+        Ok(resp) => {
+            if resp.state == "closed" {
+                Ok(())
+            } else {
+                Err(anyhow!("Issue close error: {body}"))
+            }
+        }
+        Err(e) => Err(anyhow!("Issue close error: {e}")),
+    }
+}
+
+/// TODO
+///
+/// # Errors
+/// TODO
+#[instrument]
+#[inline]
+pub async fn edit_cuprate_meeting_agenda(new_items: Vec<String>) -> Result<String, anyhow::Error> {
+    let client = reqwest::ClientBuilder::new()
+        .gzip(true)
+        .user_agent(MOO_USER_AGENT)
+        .build()?;
+
+    let current_issue = find_cuprate_meeting_issue(&client, false).await?.0;
+    let last_issue = find_cuprate_meeting_issue(&client, true).await?.0;
+
+    let url = format!("{MONERO_META_GITHUB_ISSUE_API}/{current_issue}");
+
+    trace!("Editing Cuprate meeting agenda on: {url}");
+
+    let new_agenda = {
+        let mut buf = String::new();
+
+        for item in new_items {
+            buf += "- ";
+            buf += item.trim();
+            buf += "\n";
+        }
+
+        buf
+    };
+
+    info!("New meeting agenda: {new_agenda}");
+
+    let body = json!({
+        "body": format!("{TXT_CUPRATE_MEETING_PREFIX}\n{new_agenda}\n\nPrevious meeting with logs: #{last_issue}"),
+    });
+
+    info!("New meeting agenda: {body}");
+
+    let body = client
+        .patch(&url)
+        .header("Accept", "application/vnd.github+json")
+        .header("X-GitHub-Api-Version", "2022-11-28")
+        .header("Authorization", format!("Bearer {}", CONFIG.token))
+        .body(body.to_string())
+        .send()
+        .await?
+        .text()
+        .await?;
+
+    trace!("reply: {body}");
+
+    /// TODO
+    #[derive(Serialize, Deserialize)]
+    struct Response {
+        /// TODO
+        number: u64,
+        /// TODO
+        html_url: String,
+    }
+
+    match from_str::<Response>(&body) {
+        Ok(resp) => Ok(resp.html_url),
+        Err(e) => Err(anyhow!("Issue edit error: {e}")),
     }
 }

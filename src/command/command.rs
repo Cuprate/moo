@@ -3,6 +3,7 @@
 //---------------------------------------------------------------------------------------------------- Use
 use std::fmt::{Display, Write};
 
+use serde_json::Value;
 use strum::{AsRefStr, EnumCount, EnumIs, EnumIter, FromRepr, IntoStaticStr, VariantNames};
 
 use crate::{priority::Priority, pull_request::PullRequest};
@@ -44,6 +45,10 @@ pub enum Command {
     Sweeper,
     /// `!clear`
     Clear,
+    /// `!meeting`
+    Meeting,
+    /// `!agenda`
+    Agenda(Vec<String>),
     /// `!status`
     Status,
     /// `!help`
@@ -69,6 +74,7 @@ impl Display for Command {
             Self::Sweep => f.write_str("sweep"),
             Self::Sweeper => f.write_str("sweeper"),
             Self::Clear => f.write_str("clear"),
+            Self::Meeting => f.write_str("meeting"),
             Self::Status => f.write_str("status"),
             Self::Help => f.write_str("help"),
             Self::Shutdown => f.write_str("shutdown"),
@@ -91,6 +97,32 @@ impl Display for Command {
                 for pr in prs {
                     f.write_fmt(format_args!(" {pr}"))?;
                 }
+                Ok(())
+            }
+
+            // Agenda
+            Self::Agenda(items) => {
+                f.write_str("agenda")?;
+
+                if items.is_empty() {
+                    return Ok(());
+                }
+
+                f.write_str(" ")?;
+
+                let items = items
+                    .iter()
+                    .map(|item| Value::String(item.to_string()))
+                    .collect::<Vec<Value>>();
+
+                let array = Value::Array(items);
+
+                let Ok(json) = serde_json::to_string(&array) else {
+                    return Err(std::fmt::Error);
+                };
+
+                f.write_str(&json)?;
+
                 Ok(())
             }
         }
@@ -120,6 +152,11 @@ mod test {
             (Command::Remove(vec![45, 2]), "!remove 45 2"),
             (Command::Sweep, "!sweep"),
             (Command::Sweeper, "!sweeper"),
+            (Command::Meeting, "!meeting"),
+            (
+                Command::Agenda(vec!["hello".into(), "world".into()]),
+                r#"!agenda ["hello","world"]"#,
+            ),
             (Command::Clear, "!clear"),
             (Command::Status, "!status"),
             (Command::Help, "!help"),

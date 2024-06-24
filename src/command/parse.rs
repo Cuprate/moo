@@ -3,6 +3,7 @@
 //---------------------------------------------------------------------------------------------------- Use
 use std::str::FromStr;
 
+use serde_json::Value;
 use strum::VariantNames;
 use tracing::debug;
 
@@ -92,6 +93,47 @@ impl Command {
 
         Ok(Self::Remove(vec))
     }
+
+    /// TODO
+    #[inline]
+    fn from_str_agenda<'a, I: Iterator<Item = &'a str>>(
+        iter: I,
+    ) -> Result<Self, CommandParseError> {
+        let mut json = String::new();
+        for item in iter {
+            json += " ";
+            json += item;
+        }
+
+        if json.is_empty() {
+            return Err(CommandParseError::MissingParameter);
+        }
+
+        let Ok(items) = serde_json::from_str::<Vec<Value>>(&json) else {
+            return Err(CommandParseError::IncorrectParameter);
+        };
+
+        let mut vec = vec![];
+
+        for item in items {
+            let Value::String(item) = item else {
+                return Err(CommandParseError::IncorrectParameter);
+            };
+
+            vec.push(item);
+        }
+
+        if vec.is_empty() {
+            return Err(CommandParseError::MissingParameter);
+        }
+
+        // Error on duplicate parameters.
+        if slice_contains_duplicates(&vec) {
+            return Err(CommandParseError::DuplicateParameter);
+        }
+
+        Ok(Self::Agenda(vec))
+    }
 }
 
 impl FromStr for Command {
@@ -120,6 +162,8 @@ impl FromStr for Command {
             "!sweep" => Self::Sweep,
             "!sweeper" => Self::Sweeper,
             "!clear" => Self::Clear,
+            "!meeting" => Self::Meeting,
+            "!agenda" => Self::from_str_agenda(iter)?,
             "!status" => Self::Status,
             "!help" => Self::Help,
             "!shutdown" => Self::Shutdown,
@@ -253,5 +297,36 @@ mod test {
     #[should_panic(expected = "called `Result::unwrap()` on an `Err` value: DuplicateParameter")]
     fn parse_remove_dup_param() {
         Command::from_str("!remove 2 2").unwrap();
+    }
+
+    /// Test `FromStr` for `Command::Agenda`.
+    #[test]
+    fn parse_agenda() {
+        let command = Command::from_str(r#"!agenda ["hello", "world"]"#).unwrap();
+        let expected = Command::Agenda(vec!["hello".into(), "world".into()]);
+        assert_eq!(command, expected);
+
+        let command = Command::from_str(r#"!agenda ["item 1", "item 2 3"]"#).unwrap();
+        let expected = Command::Agenda(vec!["item 1".into(), "item 2 3".into()]);
+        assert_eq!(command, expected);
+
+        let command = Command::from_str(r#"!agenda ["item 1"]"#).unwrap();
+        let expected = Command::Agenda(vec!["item 1".into()]);
+        assert_eq!(command, expected);
+
+        let command = Command::from_str("!agenda");
+        let expected = Err(CommandParseError::MissingParameter);
+        assert_eq!(command, expected);
+
+        let command = Command::from_str("!agenda []");
+        let expected = Err(CommandParseError::MissingParameter);
+        assert_eq!(command, expected);
+    }
+
+    /// Test `FromStr` for `Command::Agenda` fails with duplicate parameters.
+    #[test]
+    #[should_panic(expected = "called `Result::unwrap()` on an `Err` value: DuplicateParameter")]
+    fn parse_agenda_dup_param() {
+        Command::from_str(r#"!agenda ["a", "a"]"#).unwrap();
     }
 }

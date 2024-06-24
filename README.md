@@ -40,7 +40,15 @@ If you don't want to save a password unencrypted to disk, set this environment v
  MOO_PASSWORD="$correct_password" ./moo
 ```
 
-### 4. Start
+### 4. (optional) Add correct `@moo900` GitHub API token to `moo.toml`
+If you don't want to save this to disk, set this environment variable (leading with a space):
+```bash
+# There's a space leading this command so
+# it isn't saved in your shell's history file.
+ MOO_GITHUB_TOKEN="$moo900_github_token" ./moo
+```
+
+### 5. Start
 ```bash
 ./moo
 ```
@@ -61,7 +69,9 @@ sudo systemctl start moo
 - Reply to commands (if you're in the allowed list of users)
 
 ## Commands
-`moo` is currently only used as priority merge queue bot.
+`moo` is currently used as:
+- Priority merge queue bot
+- [Cuprate meeting bot](https://github.com/monero-project/meta/issues)
 
 The below commands read/write PR numbers to the queue.
 
@@ -80,6 +90,8 @@ The below commands read/write PR numbers to the queue.
 | `!sweep`                       | Remove any PRs in the queue that can be removed (since they were merged).
 | `!sweeper`                     | Report how long before an automatic `!sweep` occurs.
 | `!clear`                       | Clear the entire queue.
+| `!meeting`                     | Begin/end Cuprate meetings. Issues/logs will be handled automatically after ending.
+| `!agenda <ARRAY_OF_STRINGS>`   | Re-write the current Cuprate meeting's extra agenda items.
 | `!status`                      | Report `moo` status.
 | `!help`                        | Print all `moo` commands.
 | `!shutdown`                    | Shutdown `moo`.
@@ -87,6 +99,10 @@ The below commands read/write PR numbers to the queue.
 Parameters are delimited by spaces, e.g.:
 ```
 !add 3 123 52 low
+```
+`!agenda` expects a JSON array containing JSON strings:
+```
+!agenda ["Greetings", "Updates", "New Agenda Item"];
 ```
 
 ## Config
@@ -100,11 +116,4 @@ For configuration, see [`moo.toml`](moo.toml).
 | Config                    | `~/.config/moo/moo.toml`
 
 ## Forking
-`moo` is hardcoded for Cuprate but it _probably_ works with any account in any room, just edit these [constants](https://github.com/Cuprate/moo/blob/2e2be1abecfac8c75a5a1942dae1f40d880f4756/src/constants.rs):
-- [`MOO_MATRIX_ID`](https://github.com/Cuprate/moo/blob/2e2be1abecfac8c75a5a1942dae1f40d880f4756/src/constants.rs#L62-L64) (your bot's username)
-- [`CUPRATE_GITHUB_PULL`](https://github.com/Cuprate/moo/blob/2e2be1abecfac8c75a5a1942dae1f40d880f4756/src/constants.rs#L18)
-- [`CUPRATE_GITHUB_PULL_API`](https://github.com/Cuprate/moo/blob/2e2be1abecfac8c75a5a1942dae1f40d880f4756/src/constants.rs#L21)
-- [`CUPRATE_MATRIX_ROOM_ID`](https://github.com/Cuprate/moo/blob/2e2be1abecfac8c75a5a1942dae1f40d880f4756/src/constants.rs#L53-L55)
-- [`ALLOWED_MATRIX_IDS_DEFAULT`](https://github.com/Cuprate/moo/blob/2e2be1abecfac8c75a5a1942dae1f40d880f4756/src/constants.rs#L78-L85)
-
-and remove the `allowed_users` in `moo.toml`.
+`moo` is hardcoded for Cuprate but it _probably_ works with any account in any room, just edit some of these [constants](https://github.com/Cuprate/moo/blob/2e2be1abecfac8c75a5a1942dae1f40d880f4756/src/constants.rs), and remove the `allowed_users` in `moo.toml`.
