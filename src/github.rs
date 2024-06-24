@@ -9,8 +9,8 @@ use tracing::{info, instrument, trace};
 
 use crate::{
     constants::{
-        CONFIG, CUPRATE_GITHUB_PULL_API, MONERO_META_GITHUB_ISSUE_API, MOO_USER_AGENT,
-        TXT_CUPRATE_MEETING_PREFIX, TXT_CUPRATE_MEETING_SUFFIX,
+        CONFIG, CUPRATE_GITHUB_PULL_API, MONERO_META_GITHUB_ISSUE_API, MOO_GITHUB_ID,
+        MOO_USER_AGENT, TXT_CUPRATE_MEETING_PREFIX, TXT_CUPRATE_MEETING_SUFFIX,
     },
     pull_request::{PullRequest, PullRequestError},
 };
@@ -156,9 +156,7 @@ pub async fn find_cuprate_meeting_issue(
 
     let mut second = false;
     for resp in responses {
-        if ["boog900", "moo900"].contains(&resp.user.login.as_str())
-            && resp.title.contains("Cuprate Meeting")
-        {
+        if resp.user.login == MOO_GITHUB_ID && resp.title.contains("Cuprate Meeting") {
             if find_last_issue {
                 if second {
                     return Ok((resp.number, resp.title));

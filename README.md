@@ -102,7 +102,7 @@ Parameters are delimited by spaces, e.g.:
 ```
 `!agenda` expects a JSON array containing JSON strings:
 ```
-!agenda ["Greetings", "Updates", "New Agenda Item"];
+!agenda ["New Agenda Item", "New Item 2"];
 ```
 
 ## Config

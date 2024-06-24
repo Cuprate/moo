@@ -72,7 +72,10 @@ pub static CUPRATE_MATRIX_ROOM_ID: Lazy<OwnedRoomId> =
 // pub static CUPRATE_MATRIX_ROOM_ID: Lazy<OwnedRoomId> =
 //     Lazy::new(|| RoomId::parse("!SrjNVhHuHOWcFfYRfj:monero.social").unwrap());
 
-//---------------------------------------------------------------------------------------------------- Matrix IDs
+//---------------------------------------------------------------------------------------------------- IDs
+/// TODO
+pub const MOO_GITHUB_ID: &str = "moo900";
+
 /// TODO
 pub static MOO_MATRIX_ID: Lazy<OwnedUserId> =
     Lazy::new(|| user_id!("@moo:monero.social").to_owned());
