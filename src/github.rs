@@ -2,7 +2,7 @@
 
 //---------------------------------------------------------------------------------------------------- Use
 use anyhow::anyhow;
-use reqwest::Client;
+use reqwest::{Client, RequestBuilder};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, json};
 use tracing::{info, instrument, trace};
@@ -15,6 +15,17 @@ use crate::{
     pull_request::{PullRequest, PullRequestError},
 };
 
+//---------------------------------------------------------------------------------------------------- Free
+/// TODO
+fn build_client() -> Result<Client, anyhow::Error> {
+    let client = reqwest::ClientBuilder::new()
+        .gzip(true)
+        .user_agent(MOO_USER_AGENT)
+        .build()?;
+
+    Ok(client)
+}
+
 //---------------------------------------------------------------------------------------------------- Event
 /// TODO
 ///
@@ -26,18 +37,9 @@ pub async fn pr_is_open(pr: PullRequest) -> Result<bool, PullRequestError> {
     let url = format!("{CUPRATE_GITHUB_PULL_API}/{pr}");
     trace!("PR url: {url}");
 
-    let client = match reqwest::ClientBuilder::new()
-        .gzip(true)
-        .user_agent(MOO_USER_AGENT)
-        .build()
-    {
+    let client = match build_client() {
         Ok(c) => c,
-        Err(e) => {
-            return Err(PullRequestError::Other {
-                pr,
-                error: e.into(),
-            })
-        }
+        Err(error) => return Err(PullRequestError::Other { pr, error }),
     };
 
     let req = match client.get(url).send().await {
@@ -87,6 +89,20 @@ pub async fn pr_is_open(pr: PullRequest) -> Result<bool, PullRequestError> {
 
 //---------------------------------------------------------------------------------------------------- Issues
 /// TODO
+trait AddGithubHeaders {
+    /// TODO
+    fn add_github_headers(self) -> Self;
+}
+
+impl AddGithubHeaders for RequestBuilder {
+    fn add_github_headers(self) -> Self {
+        self.header("Accept", "application/vnd.github+json")
+            .header("X-GitHub-Api-Version", "2022-11-28")
+            .header("Authorization", format!("Bearer {}", CONFIG.token))
+    }
+}
+
+/// TODO
 ///
 /// # Errors
 /// TODO
@@ -95,10 +111,7 @@ pub async fn pr_is_open(pr: PullRequest) -> Result<bool, PullRequestError> {
 pub async fn finish_cuprate_meeting(
     meeting_logs: String,
 ) -> Result<(String, String), anyhow::Error> {
-    let client = reqwest::ClientBuilder::new()
-        .gzip(true)
-        .user_agent(MOO_USER_AGENT)
-        .build()?;
+    let client = build_client()?;
 
     let (issue, title) = find_cuprate_meeting_issue(&client, false).await?;
     let logs = post_comment_in_issue(&client, issue, meeting_logs).await?;
@@ -122,9 +135,7 @@ pub async fn find_cuprate_meeting_issue(
 
     let body = client
         .get(MONERO_META_GITHUB_ISSUE_API)
-        .header("Accept", "application/vnd.github+json")
-        .header("X-GitHub-Api-Version", "2022-11-28")
-        .header("Authorization", format!("Bearer {}", CONFIG.token))
+        .add_github_headers()
         .query(&[("state", "all")])
         .send()
         .await?
@@ -186,22 +197,13 @@ pub async fn post_cuprate_meeting_issue(
     trace!("Posting Cuprate meeting issue on: {MONERO_META_GITHUB_ISSUE_API}");
 
     let next_meeting_iso_8601 = {
-        use chrono::{prelude::*, Days, Weekday};
-
-        let mut today = Utc::now().date_naive();
-
-        while today.weekday() == Weekday::Tue {
-            println!("{today}");
-            today = today + Days::new(1);
-        }
-
-        while today.weekday() != Weekday::Tue {
-            println!("{today}");
-            today = today + Days::new(1);
-        }
-
-        today.format("%Y-%m-%d").to_string()
+        use chrono::{prelude::*, Days};
+        let today = Utc::now().date_naive();
+        let next = today + Days::new(7);
+        next.format("%Y-%m-%d").to_string()
     };
+
+    info!("Next meeting date: {next_meeting_iso_8601}");
 
     let next_meeting_number = {
         let mut iter = previous_meeting_title.split_whitespace();
@@ -248,9 +250,7 @@ pub async fn post_cuprate_meeting_issue(
 
     let body = client
         .post(MONERO_META_GITHUB_ISSUE_API)
-        .header("Accept", "application/vnd.github+json")
-        .header("X-GitHub-Api-Version", "2022-11-28")
-        .header("Authorization", format!("Bearer {}", CONFIG.token))
+        .add_github_headers()
         .body(body.to_string())
         .send()
         .await?
@@ -289,9 +289,7 @@ pub async fn post_comment_in_issue(
 
     let body = client
         .post(url)
-        .header("Accept", "application/vnd.github+json")
-        .header("X-GitHub-Api-Version", "2022-11-28")
-        .header("Authorization", format!("Bearer {}", CONFIG.token))
+        .add_github_headers()
         .body(json!({"body":comment}).to_string())
         .send()
         .await?
@@ -336,9 +334,7 @@ pub async fn close_issue(client: &Client, issue: u64) -> Result<(), anyhow::Erro
 
     let body = client
         .patch(url)
-        .header("Accept", "application/vnd.github+json")
-        .header("X-GitHub-Api-Version", "2022-11-28")
-        .header("Authorization", format!("Bearer {}", CONFIG.token))
+        .add_github_headers()
         .body(body.to_string())
         .send()
         .await?
@@ -375,10 +371,7 @@ pub async fn close_issue(client: &Client, issue: u64) -> Result<(), anyhow::Erro
 #[instrument]
 #[inline]
 pub async fn edit_cuprate_meeting_agenda(new_items: Vec<String>) -> Result<String, anyhow::Error> {
-    let client = reqwest::ClientBuilder::new()
-        .gzip(true)
-        .user_agent(MOO_USER_AGENT)
-        .build()?;
+    let client = build_client()?;
 
     let current_issue = find_cuprate_meeting_issue(&client, false).await?.0;
     let last_issue = find_cuprate_meeting_issue(&client, true).await?.0;
@@ -409,9 +402,7 @@ pub async fn edit_cuprate_meeting_agenda(new_items: Vec<String>) -> Result<Strin
 
     let body = client
         .patch(&url)
-        .header("Accept", "application/vnd.github+json")
-        .header("X-GitHub-Api-Version", "2022-11-28")
-        .header("Authorization", format!("Bearer {}", CONFIG.token))
+        .add_github_headers()
         .body(body.to_string())
         .send()
         .await?
