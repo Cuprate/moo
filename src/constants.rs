@@ -111,6 +111,12 @@ pub const MOO_GITHUB_TOKEN_ENV_VAR: &str = "MOO_GITHUB_TOKEN";
 /// TODO
 pub const DEFAULT_LOG_LEVEL: tracing::Level = tracing::Level::TRACE;
 
+/// TODO
+pub const CUPRATE_MEETING_WEEKDAY: chrono::Weekday = chrono::Weekday::Tue;
+
+/// TODO
+pub const CUPRATE_MEETING_UTC_HOUR: u32 = 18;
+
 //---------------------------------------------------------------------------------------------------- PATHs
 /// TODO
 pub const MOO_SUBDIR: &str = "moo";

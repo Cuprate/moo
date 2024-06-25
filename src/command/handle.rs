@@ -13,7 +13,8 @@ use tracing::{info, instrument, trace};
 use crate::{
     command::Command,
     constants::{
-        CONFIG, CUPRATE_GITHUB_PULL, HELP, INIT_INSTANT, MOO, TXT_EMPTY, TXT_MEETING_START_IDENT,
+        CONFIG, CUPRATE_GITHUB_PULL, CUPRATE_MEETING_UTC_HOUR, CUPRATE_MEETING_WEEKDAY, HELP,
+        INIT_INSTANT, MOO, TXT_EMPTY, TXT_MEETING_START_IDENT,
     },
     database::Database,
     github::pr_is_open,
@@ -314,6 +315,23 @@ impl Command {
     /// TODO
     #[instrument]
     async fn handle_meeting() -> RoomMessageEventContent {
+        {
+            use chrono::prelude::*;
+            let now = chrono::Utc::now();
+
+            if now.date_naive().weekday() != CUPRATE_MEETING_WEEKDAY {
+                let msg = format!("It is not <{CUPRATE_MEETING_WEEKDAY}>");
+                trace!(msg);
+                return RoomMessageEventContent::text_plain(msg);
+            }
+
+            if now.time().hour() < CUPRATE_MEETING_UTC_HOUR {
+                let msg = format!("It is not <{CUPRATE_MEETING_UTC_HOUR}>");
+                trace!(msg);
+                return RoomMessageEventContent::text_plain(msg);
+            }
+        }
+
         let msg = if MEETING_ONGOING.load(Ordering::Acquire) {
             let mut logs = String::new();
             let mut db = MEETING_DATABASE.lock().await;
