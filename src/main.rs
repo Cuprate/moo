@@ -134,6 +134,9 @@ async fn main() {
     // Init custom panic handler.
     panic::set_panic_hook();
 
+    // Print version.
+    println!("{}", constants::MOO);
+
     // Initialize:
     // - [`CONFIG`]
     // - Logger
