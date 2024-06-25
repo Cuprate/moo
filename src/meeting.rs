@@ -79,6 +79,6 @@ pub async fn meeting_handler(startup: SystemTime, event: SyncRoomMessageEvent) {
 
     let mut db = MEETING_DATABASE.lock().await;
     if MEETING_ONGOING.load(std::sync::atomic::Ordering::Acquire) {
-        *db += &format!("\n\n> {}: {text}", sender.localpart());
+        *db += &format!("\n```\n{}: {text}\n```", sender.localpart());
     }
 }
