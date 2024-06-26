@@ -326,7 +326,7 @@ impl Command {
             }
 
             if now.time().hour() < CUPRATE_MEETING_UTC_HOUR {
-                let msg = format!("It is not <{CUPRATE_MEETING_UTC_HOUR}>");
+                let msg = format!("It is not >= {CUPRATE_MEETING_UTC_HOUR}:00");
                 trace!(msg);
                 return RoomMessageEventContent::text_plain(msg);
             }

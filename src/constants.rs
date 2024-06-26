@@ -81,23 +81,12 @@ pub static MOO_MATRIX_ID: Lazy<OwnedUserId> =
     Lazy::new(|| user_id!("@moo:monero.social").to_owned());
 
 /// TODO
-pub static HINTO_MATRIX_ID: Lazy<OwnedUserId> =
-    Lazy::new(|| user_id!("@hinto:monero.social").to_owned());
-
-/// TODO
-pub static BOOG900_MATRIX_ID: Lazy<OwnedUserId> =
-    Lazy::new(|| user_id!("@boog900:monero.social").to_owned());
-
-/// TODO
-pub static SYNTHETICBIRD_MATRIX_ID: Lazy<OwnedUserId> =
-    Lazy::new(|| user_id!("@syntheticbird:monero.social").to_owned());
-
-/// TODO
 pub static ALLOWED_MATRIX_IDS_DEFAULT: Lazy<Vec<OwnedUserId>> = Lazy::new(|| {
     vec![
-        HINTO_MATRIX_ID.clone(),
-        BOOG900_MATRIX_ID.clone(),
-        SYNTHETICBIRD_MATRIX_ID.clone(),
+        user_id!("@hinto:monero.social").to_owned(),
+        user_id!("@boog900:monero.social").to_owned(),
+        user_id!("@syntheticbird:monero.social").to_owned(),
+        user_id!("@yamabiiko:unitoo.it").to_owned(),
     ]
 });
 
