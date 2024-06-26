@@ -6,15 +6,15 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use matrix_sdk::ruma::{events::room::message::RoomMessageEventContent, OwnedUserId};
+use matrix_sdk::ruma::{events::room::message::RoomMessageEventContent, OwnedUserId, UserId};
 use readable::up::{Uptime, UptimeFull};
 use tracing::{info, instrument, trace};
 
 use crate::{
     command::Command,
     constants::{
-        CONFIG, CUPRATE_GITHUB_PULL, CUPRATE_MEETING_UTC_HOUR, CUPRATE_MEETING_WEEKDAY, HELP,
-        INIT_INSTANT, MOO, TXT_EMPTY, TXT_MEETING_START_IDENT,
+        CONFIG, CUPRATE_GITHUB_PULL, CUPRATE_MEETING_MODERATOR_MATRIX_ID, CUPRATE_MEETING_UTC_HOUR,
+        CUPRATE_MEETING_WEEKDAY, HELP, INIT_INSTANT, MOO, TXT_EMPTY, TXT_MEETING_START_IDENT,
     },
     database::Database,
     github::pr_is_open,
@@ -62,7 +62,7 @@ impl Command {
                 Self::Sweep => Self::handle_sweep(db).await,
                 Self::Sweeper => Self::handle_sweeper(db).await,
                 Self::Clear => Self::handle_clear(db).await,
-                Self::Meeting => Self::handle_meeting().await,
+                Self::Meeting => Self::handle_meeting(&user).await,
                 Self::Agenda(items) => Self::handle_agenda(items).await,
                 Self::Status => Self::handle_status(),
                 Self::Help => Self::handle_help(),
@@ -314,7 +314,17 @@ impl Command {
 
     /// TODO
     #[instrument]
-    async fn handle_meeting() -> RoomMessageEventContent {
+    async fn handle_meeting(user: &UserId) -> RoomMessageEventContent {
+        // Only the moderator should be able to start/end the meeting.
+        if user != *CUPRATE_MEETING_MODERATOR_MATRIX_ID {
+            let msg = format!(
+                "You are not the meeting moderator ({CUPRATE_MEETING_MODERATOR_MATRIX_ID:?})"
+            );
+            info!(msg);
+            return RoomMessageEventContent::text_plain(msg);
+        }
+
+        // Check if it is the right date/time.
         {
             use chrono::prelude::*;
             let now = chrono::Utc::now();
@@ -332,6 +342,7 @@ impl Command {
             }
         }
 
+        // If the meeting is on-going, end it.
         let msg = if MEETING_ONGOING.load(Ordering::Acquire) {
             let mut logs = String::new();
             let mut db = MEETING_DATABASE.lock().await;
@@ -345,6 +356,7 @@ impl Command {
                 }
                 Err(e) => e.to_string(),
             }
+        // Else, start it.
         } else {
             let mut db = MEETING_DATABASE.lock().await;
             *db = String::from("## Meeting logs");

@@ -5,7 +5,7 @@ use std::{hint::black_box, path::PathBuf, time::Instant};
 
 use const_format::formatcp;
 use matrix_sdk::{
-    ruma::{user_id, OwnedRoomId, OwnedUserId, RoomId},
+    ruma::{owned_user_id, room_id, user_id, OwnedUserId, RoomId, UserId},
     Client, Room,
 };
 use once_cell::sync::Lazy;
@@ -65,28 +65,31 @@ pub const MOO_USER_AGENT: &str = concat!("moo", "/", env!("CARGO_PKG_VERSION"),)
 
 //---------------------------------------------------------------------------------------------------- Matrix Rooms
 /// Cuprate's Matrix room ID.
-pub static CUPRATE_MATRIX_ROOM_ID: Lazy<OwnedRoomId> =
-    Lazy::new(|| RoomId::parse("!zPLCnZSsyeFFxUiqUZ:monero.social").unwrap());
+pub static CUPRATE_MATRIX_ROOM_ID: Lazy<&RoomId> =
+    Lazy::new(|| room_id!("!zPLCnZSsyeFFxUiqUZ:monero.social"));
 
 // /// Test Matrix room ID.
-// pub static CUPRATE_MATRIX_ROOM_ID: Lazy<OwnedRoomId> =
-//     Lazy::new(|| RoomId::parse("!SrjNVhHuHOWcFfYRfj:monero.social").unwrap());
+// pub static CUPRATE_MATRIX_ROOM_ID: Lazy<&RoomId> =
+//     Lazy::new(|| room_id!("!SrjNVhHuHOWcFfYRfj:monero.social"));
 
 //---------------------------------------------------------------------------------------------------- IDs
 /// TODO
 pub const MOO_GITHUB_ID: &str = "moo900";
 
 /// TODO
-pub static MOO_MATRIX_ID: Lazy<OwnedUserId> =
-    Lazy::new(|| user_id!("@moo:monero.social").to_owned());
+pub static MOO_MATRIX_ID: Lazy<&UserId> = Lazy::new(|| user_id!("@moo:monero.social"));
 
 /// TODO
-pub static ALLOWED_MATRIX_IDS_DEFAULT: Lazy<Vec<OwnedUserId>> = Lazy::new(|| {
-    vec![
-        user_id!("@hinto:monero.social").to_owned(),
-        user_id!("@boog900:monero.social").to_owned(),
-        user_id!("@syntheticbird:monero.social").to_owned(),
-        user_id!("@yamabiiko:unitoo.it").to_owned(),
+pub static CUPRATE_MEETING_MODERATOR_MATRIX_ID: Lazy<&UserId> =
+    Lazy::new(|| user_id!("@boog900:monero.social"));
+
+/// TODO
+pub static ALLOWED_MATRIX_IDS_DEFAULT: Lazy<[OwnedUserId; 4]> = Lazy::new(|| {
+    [
+        owned_user_id!("@hinto:monero.social"),
+        owned_user_id!("@boog900:monero.social"),
+        owned_user_id!("@syntheticbird:monero.social"),
+        owned_user_id!("@yamabiiko:unitoo.it"),
     ]
 });
 
