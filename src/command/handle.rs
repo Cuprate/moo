@@ -330,13 +330,13 @@ impl Command {
             let now = chrono::Utc::now();
 
             if now.date_naive().weekday() != CUPRATE_MEETING_WEEKDAY {
-                let msg = format!("It is not <{CUPRATE_MEETING_WEEKDAY}>");
+                let msg = format!("It is not the meeting day ({CUPRATE_MEETING_WEEKDAY})");
                 trace!(msg);
                 return RoomMessageEventContent::text_plain(msg);
             }
 
-            if now.time().hour() < CUPRATE_MEETING_UTC_HOUR {
-                let msg = format!("It is not >= {CUPRATE_MEETING_UTC_HOUR}:00");
+            if now.time().hour() != CUPRATE_MEETING_UTC_HOUR {
+                let msg = format!("It is not the meeting hour ({CUPRATE_MEETING_UTC_HOUR}:00)");
                 trace!(msg);
                 return RoomMessageEventContent::text_plain(msg);
             }

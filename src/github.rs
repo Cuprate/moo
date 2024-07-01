@@ -395,7 +395,7 @@ pub async fn edit_cuprate_meeting_agenda(new_items: Vec<String>) -> Result<Strin
     info!("New meeting agenda: {new_agenda}");
 
     let body = json!({
-        "body": format!("{TXT_CUPRATE_MEETING_PREFIX}\n{new_agenda}\n\nPrevious meeting with logs: #{last_issue}"),
+        "body": format!("{TXT_CUPRATE_MEETING_PREFIX}\n{new_agenda}\n{TXT_CUPRATE_MEETING_SUFFIX}\n\nPrevious meeting with logs: #{last_issue}"),
     });
 
     info!("New meeting agenda: {body}");
