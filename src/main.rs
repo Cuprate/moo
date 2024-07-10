@@ -161,6 +161,14 @@ async fn main() {
         sweeper::spawn_sweeper(Arc::clone(&db), CONFIG.sweeper);
     }
 
+    // Sweep on startup.
+    if CONFIG.sweep_on_startup {
+        let msg = command::Command::handle_sweep(Arc::clone(&db)).await;
+        info!("sweep_on_startup: {msg:?}");
+    } else {
+        info!("sweep_on_startup: SKIPPING");
+    }
+
     // Spawn meeting.
     if CONFIG.token.is_empty() {
         info!("Skipping meeting handler");

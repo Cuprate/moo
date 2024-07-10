@@ -53,6 +53,12 @@ allowed_users = [
 # TYPE | unsigned integer (seconds)
 sweeper = 86400 # 1 day
 
+# Automatically run the `!sweep` command on `moo` startup.
+#
+# DEFAULT | true
+# TYPE    | boolean
+sweep_on_startup = true
+
 
 #----------------------------------------------------------#
 #                         LOGGING                          #

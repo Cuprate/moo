@@ -31,6 +31,10 @@ pub struct Config {
     pub sweeper: u64,
 
     /// TODO
+    #[serde(default = "default_sweep_on_startup")]
+    pub sweep_on_startup: bool,
+
+    /// TODO
     #[serde(default = "default_log_level")]
     pub log_level: String,
 }
@@ -42,6 +46,7 @@ impl Default for Config {
             token: default_password(),
             allowed_users: default_allowed_users(),
             sweeper: default_sweeper(),
+            sweep_on_startup: default_sweep_on_startup(),
             log_level: default_log_level(),
         }
     }
@@ -108,6 +113,11 @@ fn default_allowed_users() -> Vec<OwnedUserId> {
 const fn default_sweeper() -> u64 {
     // 1 day.
     24 * 60 * 60
+}
+
+/// TODO
+const fn default_sweep_on_startup() -> bool {
+    true
 }
 
 /// TODO
