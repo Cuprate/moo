@@ -260,7 +260,7 @@ impl Command {
     /// TODO
     #[instrument]
     pub async fn handle_sweep(db: Arc<Database>) -> RoomMessageEventContent {
-        let db = db.write().await;
+        let mut db = db.write().await;
         return_if_empty!(db);
 
         let mut keep = vec![];
@@ -269,11 +269,13 @@ impl Command {
         for pr in db.keys() {
             // Check if open PR.
             match pr_is_open(*pr).await {
-                Ok(true) => keep.push(pr),
-                Ok(false) => sweep.push(pr),
+                Ok(true) => keep.push(*pr),
+                Ok(false) => sweep.push(*pr),
                 Err(e) => return RoomMessageEventContent::text_plain(e.to_string()),
             }
         }
+
+        db.retain(|k, _| keep.contains(k));
 
         let msg = format!("Keeping: {keep:?}, sweeping: {sweep:?}");
         trace!(msg);
