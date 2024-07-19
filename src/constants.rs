@@ -183,8 +183,6 @@ pub const TXT_CUPRATE_MEETING_PREFIX: &str = "[Cuprate](https://github.com/Cupra
 
 Location: [Libera.chat, #cuprate](https://libera.chat/) | [Matrix](https://matrix.to/#/#cuprate:monero.social?via=matrix.org&via=monero.social)
 
-> Note that there are currently communication issues with Matrix accounts created on the matrix.org server, consider using a different homeserver to see messages.
-
 [Join the Monero Matrix server if you don't already have a Matrix account](https://www.getmonero.org/resources/user-guides/join-monero-matrix.html)
 
 Time: 18:00 UTC [Check in your timezone](https://www.timeanddate.com/worldclock/converter.html)
