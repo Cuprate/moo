@@ -1,8 +1,6 @@
 //! TODO
 
 //---------------------------------------------------------------------------------------------------- Use
-
-use matrix_sdk::ruma::events::room::message::RoomMessageEventContent;
 use readable::up::UptimeFull;
 
 use crate::constants::INIT_INSTANT;
