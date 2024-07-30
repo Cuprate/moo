@@ -116,11 +116,14 @@ pub mod sweeper;
 pub mod sync;
 
 //---------------------------------------------------------------------------------------------------- Use
-use std::{sync::Arc, time::SystemTime};
+use std::{
+    sync::Arc,
+    time::{Duration, SystemTime},
+};
 
 use constants::{CLIENT, CONFIG, INIT_INSTANT};
 use matrix_sdk::ruma::events::room::message::SyncRoomMessageEvent;
-use tracing::info;
+use tracing::{error, info};
 
 //---------------------------------------------------------------------------------------------------- Main
 #[tokio::main]
@@ -179,9 +182,24 @@ async fn main() {
         });
     }
 
-    // Hang forever (until error).
-    match CLIENT.sync(sync::sync_settings()).await {
-        Ok(()) => shutdown::graceful_shutdown(db),
-        Err(e) => panic!("{e}"),
+    // Sync forever, ignore errors.
+    loop {
+        match CLIENT.sync(sync::sync_settings()).await {
+            Ok(()) => {
+                shutdown::graceful_shutdown(db);
+                std::process::exit(0);
+            }
+
+            // This sometimes runs into:
+            // `the server returned an error: [404] <non-json bytes>`
+            // which can be ignored.
+            Err(e) => {
+                /// How long to sleep for before trying to sync again.
+                const SLEEP: Duration = Duration::from_secs(5);
+                error!("sync error: {e:?}");
+                info!("re-syncing after: {SLEEP:?}");
+                tokio::time::sleep(SLEEP).await;
+            }
+        }
     }
 }
