@@ -32,11 +32,5 @@ Stack backtrace:\n{stack_trace}
         );
 
         println!("{panic_info}");
-
-        // Send panic message to room.
-        tokio::runtime::Handle::current().block_on(async move {
-            let msg = RoomMessageEventContent::text_markdown(panic_info);
-            crate::free::send(msg).await.unwrap();
-        });
     }));
 }
