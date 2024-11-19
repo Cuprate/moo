@@ -77,6 +77,13 @@ pub async fn meeting_handler(startup: SystemTime, event: SyncRoomMessageEvent) {
         _ => "<unknown_attachment>",
     };
 
+    // HACK: do not relay ``` as it messes up the meeting log formatting:
+    // <https://github.com/monero-project/meta/issues/1108>
+    if text == "```" {
+        info!("Ignoring ```");
+        return;
+    }
+
     let mut db = MEETING_DATABASE.lock().await;
     if MEETING_ONGOING.load(std::sync::atomic::Ordering::Acquire) {
         *db += &format!("\n```\n{}: {text}\n```", sender.localpart());
