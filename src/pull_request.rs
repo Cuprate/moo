@@ -39,7 +39,7 @@ pub enum PullRequestError {
 
 impl PullRequestError {
     /// TODO
-    pub fn other(pr: PullRequest, error: anyhow::Error) -> Self {
+    pub const fn other(pr: PullRequest, error: anyhow::Error) -> Self {
         Self::Other { pr, error }
     }
 }

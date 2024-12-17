@@ -84,12 +84,11 @@ pub static CUPRATE_MEETING_MODERATOR_MATRIX_ID: Lazy<&UserId> =
     Lazy::new(|| user_id!("@boog900:monero.social"));
 
 /// TODO
-pub static ALLOWED_MATRIX_IDS_DEFAULT: Lazy<[OwnedUserId; 4]> = Lazy::new(|| {
+pub static ALLOWED_MATRIX_IDS_DEFAULT: Lazy<[OwnedUserId; 3]> = Lazy::new(|| {
     [
         owned_user_id!("@hinto:monero.social"),
         owned_user_id!("@boog900:monero.social"),
         owned_user_id!("@syntheticbird:monero.social"),
-        owned_user_id!("@yamabiiko:unitoo.it"),
     ]
 });
 

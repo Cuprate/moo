@@ -162,7 +162,7 @@ impl Command {
         ] {
             for (pr, md) in db.iter() {
                 if md.priority == priority {
-                    string += &format!("{pr:?} ");
+                    string.push_str(&format!("{pr:?} "));
                 }
             }
         }
@@ -346,11 +346,11 @@ impl Command {
 
         // If the meeting is on-going, end it.
         let msg = if MEETING_ONGOING.load(Ordering::Acquire) {
+            MEETING_ONGOING.store(false, Ordering::Release);
+
             let mut logs = String::new();
             let mut db = MEETING_DATABASE.lock().await;
             std::mem::swap(&mut logs, &mut db);
-
-            MEETING_ONGOING.store(false, Ordering::Release);
 
             match crate::github::finish_cuprate_meeting(logs).await {
                 Ok((logs, next_meeting)) => {

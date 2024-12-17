@@ -67,25 +67,30 @@ pub async fn meeting_handler(startup: SystemTime, event: SyncRoomMessageEvent) {
         }
     }
 
-    let text = match &event.content.msgtype {
-        MessageType::Text(t) => &t.body,
-        MessageType::Audio(_) => "<audio>",
-        MessageType::Emote(_) => "<emote>",
-        MessageType::Image(_) => "<image>",
-        MessageType::Video(_) => "<video>",
-        MessageType::File(_) => "<file>",
-        _ => "<unknown_attachment>",
+    let text = match event.content.msgtype {
+        MessageType::Text(t) => t.body,
+        MessageType::Emote(x) => x.body,
+        MessageType::Notice(x) => x.body,
+        MessageType::ServerNotice(x) => x.body,
+        MessageType::VerificationRequest(x) => x.body,
+        MessageType::Location(x) => format!("<{}>", x.plain_text_representation()),
+        MessageType::Audio(x) => format!("<{}>", x.filename()),
+        MessageType::File(x) => format!("<{}>", x.filename()),
+        MessageType::Image(x) => format!("<{}>", x.filename()),
+        MessageType::Video(x) => format!("<{}>", x.filename()),
+        _ => "<unknown>".to_string(),
     };
 
     // HACK: do not relay ``` as it messes up the meeting log formatting:
     // <https://github.com/monero-project/meta/issues/1108>
-    if text == "```" {
-        info!("Ignoring ```");
-        return;
-    }
+    let text = if text.contains("```") {
+        text.replace("```", "")
+    } else {
+        text
+    };
 
     let mut db = MEETING_DATABASE.lock().await;
     if MEETING_ONGOING.load(std::sync::atomic::Ordering::Acquire) {
-        *db += &format!("\n```\n{}: {text}\n```", sender.localpart());
+        db.push_str(&format!("\n```\n{}: {text}\n```", sender.localpart()));
     }
 }

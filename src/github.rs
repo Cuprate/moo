@@ -210,11 +210,11 @@ pub async fn post_cuprate_meeting_issue(
 
         let err = || anyhow!("Failed to parse previous meeting title: {previous_meeting_title}");
 
-        if !iter.next().is_some_and(|s| s == "Cuprate") {
+        if iter.next().is_none_or(|s| s != "Cuprate") {
             return Err(err());
         }
 
-        if !iter.next().is_some_and(|s| s == "Meeting") {
+        if iter.next().is_none_or(|s| s != "Meeting") {
             return Err(err());
         }
 

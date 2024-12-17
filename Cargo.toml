@@ -10,25 +10,25 @@ license        = "MIT"
 description    = "Matrix bot for Cuprate"
 
 [dependencies]
-anyhow             = { version = "1.0.86" }
-chrono             = { version = "0.4.38" }
-const_format       = { version = "0.2.32" }
-dirs               = { version = "5.0.1" }
-matrix-sdk         = { version = "0.7.1", features = ["markdown", "anyhow"] }
-once_cell          = { version = "1.19.0" }
-rand               = { version = "0.8.5" }
-readable           = { version = "0.16.0", features = ["full"] }
-reqwest            = { version = "0.12.5", features = ["gzip"] }
-serde              = { version = "1.0.203", features = ["derive"] }
-serde_json         = { version = "1.0.117" }
-serde_plain        = { version = "1.0.2" }
-strum              = { version = "0.26.2", features = ["derive"] }
-thiserror          = { version = "1.0.61" }
-tokio              = { version = "1.38.0", features = ["full"] }
-toml               = { version = "0.8.14" }
-tracing            = { version = "0.1.40" }
-tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
-zeroize            = { version = "1.8.1" }
+anyhow             = { version = "1" }
+chrono             = { version = "0.4" }
+const_format       = { version = "0.2" }
+dirs               = { version = "5" }
+matrix-sdk         = { version = "0.8", features = ["markdown", "anyhow"] }
+once_cell          = { version = "1" }
+rand               = { version = "0.8" }
+readable           = { version = "0.16", features = ["full"] }
+reqwest            = { version = "0.12", features = ["gzip"] }
+serde              = { version = "1", features = ["derive"] }
+serde_json         = { version = "1" }
+serde_plain        = { version = "1" }
+strum              = { version = "0.26", features = ["derive"] }
+thiserror          = { version = "2" }
+tokio              = { version = "1", features = ["full"] }
+toml               = { version = "0.8" }
+tracing            = { version = "0.1" }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+zeroize            = { version = "1" }
 
 [dev-dependencies]
-pretty_assertions = { version = "1.4.0" }
+pretty_assertions = { version = "1" }
