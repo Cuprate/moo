@@ -354,16 +354,23 @@ impl Command {
 
             match crate::github::finish_cuprate_meeting(logs).await {
                 Ok((logs, next_meeting)) => {
-                    format!("- Logs: {logs}\n - Next meeting: {next_meeting}")
+                    format!("- Logs: {logs}\n- Next meeting: {next_meeting}")
                 }
                 Err(e) => e.to_string(),
             }
         // Else, start it.
         } else {
+            let url = crate::github::current_meeting_url()
+                .await
+                .unwrap_or_else(|_| "<unknown>".into());
+
+            let msg = format!("{TXT_MEETING_START_IDENT}: {url}");
+
             let mut db = MEETING_DATABASE.lock().await;
             *db = String::from("## Meeting logs");
             MEETING_ONGOING.store(true, Ordering::Release);
-            TXT_MEETING_START_IDENT.to_string()
+
+            msg
         };
 
         trace!(msg);

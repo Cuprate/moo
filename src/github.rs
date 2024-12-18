@@ -17,13 +17,12 @@ use crate::{
 
 //---------------------------------------------------------------------------------------------------- Free
 /// TODO
-fn build_client() -> Result<Client, anyhow::Error> {
-    let client = reqwest::ClientBuilder::new()
+fn build_client() -> Client {
+    reqwest::ClientBuilder::new()
         .gzip(true)
         .user_agent(MOO_USER_AGENT)
-        .build()?;
-
-    Ok(client)
+        .build()
+        .expect("this can't error")
 }
 
 //---------------------------------------------------------------------------------------------------- Event
@@ -37,10 +36,7 @@ pub async fn pr_is_open(pr: PullRequest) -> Result<bool, PullRequestError> {
     let url = format!("{CUPRATE_GITHUB_PULL_API}/{pr}");
     trace!("PR url: {url}");
 
-    let client = match build_client() {
-        Ok(c) => c,
-        Err(error) => return Err(PullRequestError::Other { pr, error }),
-    };
+    let client = build_client();
 
     let req = match client.get(url).send().await {
         Ok(r) => r,
@@ -106,12 +102,22 @@ impl AddGithubHeaders for RequestBuilder {
 ///
 /// # Errors
 /// TODO
+pub async fn current_meeting_url() -> Result<String, anyhow::Error> {
+    let client = build_client();
+    let (issue, _) = find_cuprate_meeting_issue(&client, false).await?;
+    Ok(format!("{MONERO_META_GITHUB_ISSUE_API}/{issue}"))
+}
+
+/// TODO
+///
+/// # Errors
+/// TODO
 #[instrument]
 #[inline]
 pub async fn finish_cuprate_meeting(
     meeting_logs: String,
 ) -> Result<(String, String), anyhow::Error> {
-    let client = build_client()?;
+    let client = build_client();
 
     let (issue, title) = find_cuprate_meeting_issue(&client, false).await?;
     let logs = post_comment_in_issue(&client, issue, meeting_logs).await?;
@@ -371,7 +377,7 @@ pub async fn close_issue(client: &Client, issue: u64) -> Result<(), anyhow::Erro
 #[instrument]
 #[inline]
 pub async fn edit_cuprate_meeting_agenda(new_items: Vec<String>) -> Result<String, anyhow::Error> {
-    let client = build_client()?;
+    let client = build_client();
 
     let current_issue = find_cuprate_meeting_issue(&client, false).await?.0;
     let last_issue = find_cuprate_meeting_issue(&client, true).await?.0;

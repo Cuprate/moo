@@ -13,7 +13,7 @@ use tracing::{info, instrument, trace, warn};
 
 use crate::{
     command::Command,
-    constants::{CONFIG, TXT_MEETING_START_IDENT},
+    constants::{CONFIG, MOO_MATRIX_ID, TXT_MEETING_START_IDENT},
 };
 
 //---------------------------------------------------------------------------------------------------- Event
@@ -59,10 +59,15 @@ pub async fn meeting_handler(startup: SystemTime, event: SyncRoomMessageEvent) {
 
     {
         let body = event.content.body();
-        if CONFIG.allowed_users.contains(&sender) && body == Command::Meeting.as_ref()
-            || body == TXT_MEETING_START_IDENT
-        {
-            info!("Ignoring meeting ident");
+
+        let is_meeting_starting_cmd =
+            || CONFIG.allowed_users.contains(&sender) && body == Command::Meeting.as_ref();
+
+        let is_meeting_starting_msg =
+            || sender == *MOO_MATRIX_ID && body.starts_with(TXT_MEETING_START_IDENT);
+
+        if is_meeting_starting_cmd() || is_meeting_starting_msg() {
+            info!("Ignoring meeting starting cmd/msg");
             return;
         }
     }

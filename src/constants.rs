@@ -200,7 +200,7 @@ Main discussion topics:
 pub const TXT_CUPRATE_MEETING_SUFFIX: &str = "- Any other business";
 
 /// TODO
-pub const TXT_MEETING_START_IDENT: &str = "Recording meeting logs...";
+pub const TXT_MEETING_START_IDENT: &str = "Starting meeting";
 
 //---------------------------------------------------------------------------------------------------- Statics
 // These are accessed everywhere and replace function inputs.
