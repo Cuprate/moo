@@ -2,6 +2,7 @@
 
 //---------------------------------------------------------------------------------------------------- Use
 use std::{
+    num::NonZero,
     sync::{atomic::Ordering, Arc},
     time::{SystemTime, UNIX_EPOCH},
 };
@@ -63,6 +64,7 @@ impl Command {
                 Self::Sweeper => Self::handle_sweeper(db).await,
                 Self::Clear => Self::handle_clear(db).await,
                 Self::Meeting => Self::handle_meeting(&user).await,
+                Self::Cancel(count, reason) => Self::handle_cancel(count, reason).await,
                 Self::Agenda(items) => Self::handle_agenda(items).await,
                 Self::Status => Self::handle_status(),
                 Self::Help => Self::handle_help(),
@@ -370,6 +372,49 @@ impl Command {
             *db = String::from("## Meeting logs");
             MEETING_ONGOING.store(true, Ordering::Release);
 
+            msg
+        };
+
+        trace!(msg);
+        RoomMessageEventContent::text_markdown(msg)
+    }
+
+    /// TODO
+    #[instrument]
+    async fn handle_cancel(count: NonZero<u8>, reason: Option<String>) -> RoomMessageEventContent {
+        let msg = if MEETING_ONGOING.load(Ordering::Acquire) {
+            // If the meeting is on-going, do nothing.
+
+            let url = crate::github::current_meeting_url()
+                .await
+                .unwrap_or_else(|_| "<unknown>".into());
+
+            format!("There is a meeting on-going ({url}), use `!meeting` instead.")
+        } else {
+            /// If input is [`usize::MAX`] then moo would spend
+            /// eternity here posting and closing github issues.
+            const MAX_MEETING_CANCEL_AMOUNT: u8 = 4;
+
+            if count.get() > MAX_MEETING_CANCEL_AMOUNT {
+                return RoomMessageEventContent::text_plain(format!(
+                    "Cannot cancel more than `{MAX_MEETING_CANCEL_AMOUNT}` meetings at a time."
+                ));
+            }
+
+            let mut msg = "Canceled meeting(s):\n\n".to_string();
+            let mut next_meeting = String::new();
+
+            for _ in 0..count.get() {
+                match crate::github::cancel_cuprate_meeting(reason.as_deref()).await {
+                    Ok((canceled_url, next)) => {
+                        msg.push_str(&format!("- {canceled_url}\n"));
+                        next_meeting = next;
+                    }
+                    Err(e) => return RoomMessageEventContent::text_plain(e.to_string()),
+                }
+            }
+
+            msg.push_str(&format!("\nNext meeting: {next_meeting}"));
             msg
         };
 

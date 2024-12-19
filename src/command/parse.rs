@@ -1,7 +1,7 @@
 //! TODO
 
 //---------------------------------------------------------------------------------------------------- Use
-use std::str::FromStr;
+use std::{num::NonZero, str::FromStr};
 
 use serde_json::Value;
 use strum::VariantNames;
@@ -96,6 +96,45 @@ impl Command {
 
     /// TODO
     #[inline]
+    fn from_str_cancel<'a, I: Iterator<Item = &'a str>>(
+        mut iter: I,
+    ) -> Result<Self, CommandParseError> {
+        let Some(count) = iter.next() else {
+            return Err(CommandParseError::MissingParameter);
+        };
+
+        // Parse count number.
+        let count = match count.parse::<u8>() {
+            Ok(c) => NonZero::new(c).unwrap_or(NonZero::<u8>::MIN),
+            Err(_) => return Err(CommandParseError::IncorrectParameter),
+        };
+
+        let mut json = String::new();
+        for item in iter {
+            json += " ";
+            json += item;
+        }
+
+        // Parse reason.
+        let reason = if json.is_empty() {
+            None
+        } else {
+            let Ok(reason) = serde_json::from_str::<Value>(&json) else {
+                return Err(CommandParseError::IncorrectParameter);
+            };
+
+            let Value::String(reason) = reason else {
+                return Err(CommandParseError::IncorrectParameter);
+            };
+
+            Some(reason)
+        };
+
+        Ok(Self::Cancel(count, reason))
+    }
+
+    /// TODO
+    #[inline]
     fn from_str_agenda<'a, I: Iterator<Item = &'a str>>(
         iter: I,
     ) -> Result<Self, CommandParseError> {
@@ -163,6 +202,7 @@ impl FromStr for Command {
             "!sweeper" => Self::Sweeper,
             "!clear" => Self::Clear,
             "!meeting" => Self::Meeting,
+            "!cancel" => Self::from_str_cancel(iter)?,
             "!agenda" => Self::from_str_agenda(iter)?,
             "!status" => Self::Status,
             "!help" => Self::Help,
@@ -297,6 +337,46 @@ mod test {
     #[should_panic(expected = "called `Result::unwrap()` on an `Err` value: DuplicateParameter")]
     fn parse_remove_dup_param() {
         Command::from_str("!remove 2 2").unwrap();
+    }
+
+    /// Test [`FromStr`] for [`Command::Cancel`].
+    #[test]
+    fn parse_cancel() {
+        let command = Command::from_str("!cancel 0 \"a b c\"").unwrap();
+        let expected = Command::Cancel(NonZero::new(1).unwrap(), Some("a b c".into()));
+        assert_eq!(command, expected);
+
+        let command = Command::from_str("!cancel 2 \"Test\"").unwrap();
+        let expected = Command::Cancel(NonZero::new(2).unwrap(), Some("Test".into()));
+        assert_eq!(command, expected);
+
+        let command = Command::from_str("!cancel 29 \"Test 2\"").unwrap();
+        let expected = Command::Cancel(NonZero::new(29).unwrap(), Some("Test 2".into()));
+        assert_eq!(command, expected);
+
+        let command = Command::from_str("!cancel -1 \"Test 2\"");
+        let expected = Err(CommandParseError::IncorrectParameter);
+        assert_eq!(command, expected);
+
+        let command = Command::from_str("!cancel 21 \"asdf\" \"asdf\"");
+        let expected = Err(CommandParseError::IncorrectParameter);
+        assert_eq!(command, expected);
+
+        let command = Command::from_str("!cancel 21 asdf");
+        let expected = Err(CommandParseError::IncorrectParameter);
+        assert_eq!(command, expected);
+
+        let command = Command::from_str("!cancel 21 1 \"asdf\"");
+        let expected = Err(CommandParseError::IncorrectParameter);
+        assert_eq!(command, expected);
+
+        let command = Command::from_str("!cancel");
+        let expected = Err(CommandParseError::MissingParameter);
+        assert_eq!(command, expected);
+
+        let command = Command::from_str("!cancel \"asdf\"");
+        let expected = Err(CommandParseError::IncorrectParameter);
+        assert_eq!(command, expected);
     }
 
     /// Test `FromStr` for `Command::Agenda`.

@@ -1,10 +1,13 @@
 //! TODO
 
 //---------------------------------------------------------------------------------------------------- Use
-use std::fmt::{Display, Write};
+use std::{
+    fmt::{Display, Write},
+    num::NonZero,
+};
 
 use serde_json::Value;
-use strum::{AsRefStr, EnumCount, EnumIs, EnumIter, FromRepr, IntoStaticStr, VariantNames};
+use strum::{AsRefStr, EnumCount, EnumIs, IntoStaticStr, VariantNames};
 
 use crate::{priority::Priority, pull_request::PullRequest};
 
@@ -20,8 +23,8 @@ use crate::{priority::Priority, pull_request::PullRequest};
     AsRefStr,
     EnumCount,
     EnumIs,
-    EnumIter,
-    FromRepr,
+    // EnumIter,
+    // FromRepr,
     IntoStaticStr,
     VariantNames,
 )]
@@ -47,6 +50,8 @@ pub enum Command {
     Clear,
     /// `!meeting`
     Meeting,
+    /// `!cancel <COUNT> [REASON]`
+    Cancel(NonZero<u8>, Option<String>),
     /// `!agenda`
     Agenda(Vec<String>),
     /// `!status`
@@ -96,6 +101,15 @@ impl Display for Command {
                 f.write_str("remove")?;
                 for pr in prs {
                     f.write_fmt(format_args!(" {pr}"))?;
+                }
+                Ok(())
+            }
+
+            // Cancel
+            Self::Cancel(count, reason) => {
+                f.write_fmt(format_args!("cancel {count}"))?;
+                if let Some(reason) = reason {
+                    f.write_fmt(format_args!(" \"{reason}\""))?;
                 }
                 Ok(())
             }
@@ -157,6 +171,15 @@ mod test {
                 Command::Agenda(vec!["hello".into(), "world".into()]),
                 r#"!agenda ["hello","world"]"#,
             ),
+            (
+                Command::Cancel(NonZero::new(1).unwrap(), Some("Test".into())),
+                "!cancel 1 \"Test\"",
+            ),
+            (
+                Command::Cancel(NonZero::new(2).unwrap(), Some("Test 2".into())),
+                "!cancel 2 \"Test 2\"",
+            ),
+            (Command::Cancel(NonZero::new(3).unwrap(), None), "!cancel 3"),
             (Command::Clear, "!clear"),
             (Command::Status, "!status"),
             (Command::Help, "!help"),

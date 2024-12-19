@@ -172,6 +172,7 @@ pub const HELP: &str = r"| Command                        | Description |
 | `!sweeper`                     | Report how long before an automatic `!sweep` occurs.
 | `!clear`                       | Clear the entire queue.
 | `!meeting`                     | Begin/end Cuprate meetings. Issues/logs will be handled automatically after ending.
+| `!cancel <COUNT> [REASON]`     | Cancel Cuprate meetings. The current issue will be closed and a new issue will be opened.
 | `!agenda <ARRAY_OF_STRINGS>`   | Re-write the current Cuprate meeting's extra agenda items.
 | `!status`                      | Report `moo` status.
 | `!help`                        | Print all `moo` commands.

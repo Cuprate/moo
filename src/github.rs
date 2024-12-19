@@ -9,8 +9,9 @@ use tracing::{info, instrument, trace};
 
 use crate::{
     constants::{
-        CONFIG, CUPRATE_GITHUB_PULL_API, MONERO_META_GITHUB_ISSUE_API, MOO_GITHUB_ID,
-        MOO_USER_AGENT, TXT_CUPRATE_MEETING_PREFIX, TXT_CUPRATE_MEETING_SUFFIX,
+        CONFIG, CUPRATE_GITHUB_PULL_API, CUPRATE_MEETING_WEEKDAY, MONERO_META_GITHUB_ISSUE,
+        MONERO_META_GITHUB_ISSUE_API, MOO_GITHUB_ID, MOO_USER_AGENT, TXT_CUPRATE_MEETING_PREFIX,
+        TXT_CUPRATE_MEETING_SUFFIX,
     },
     pull_request::{PullRequest, PullRequestError},
 };
@@ -133,6 +134,29 @@ pub async fn finish_cuprate_meeting(
 /// TODO
 #[instrument]
 #[inline]
+pub async fn cancel_cuprate_meeting(
+    reason: Option<&str>,
+) -> Result<(String, String), anyhow::Error> {
+    let client = build_client();
+
+    let reason = reason.unwrap_or("Unknown");
+
+    let comment = format!("This meeting was canceled, reason: `{reason}`");
+
+    let (issue, title) = find_cuprate_meeting_issue(&client, false).await?;
+    post_comment_in_issue(&client, issue, comment).await?;
+    let next_meeting = post_cuprate_meeting_issue(&client, title, issue).await?;
+    close_issue(&client, issue).await?;
+
+    Ok((format!("{MONERO_META_GITHUB_ISSUE}/{issue}"), next_meeting))
+}
+
+/// TODO
+///
+/// # Errors
+/// TODO
+#[instrument]
+#[inline]
 pub async fn find_cuprate_meeting_issue(
     client: &Client,
     find_last_issue: bool,
@@ -204,7 +228,12 @@ pub async fn post_cuprate_meeting_issue(
 
     let next_meeting_iso_8601 = {
         use chrono::{prelude::*, Days};
-        let today = Utc::now().date_naive();
+        let mut today = Utc::now().date_naive();
+
+        while today.weekday() != CUPRATE_MEETING_WEEKDAY {
+            today = today - Days::new(1);
+        }
+
         let next = today + Days::new(7);
         next.format("%Y-%m-%d").to_string()
     };
@@ -245,7 +274,7 @@ pub async fn post_cuprate_meeting_issue(
 
     info!("Meeting title: {title}");
 
-    let body = format!("{TXT_CUPRATE_MEETING_PREFIX}\n{TXT_CUPRATE_MEETING_SUFFIX}\n\nPrevious meeting with logs: #{last_issue}");
+    let body = format!("{TXT_CUPRATE_MEETING_PREFIX}\n{TXT_CUPRATE_MEETING_SUFFIX}\n\nPrevious meeting: #{last_issue}");
 
     let body = json!({
         "title": title,

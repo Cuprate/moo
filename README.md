@@ -91,6 +91,7 @@ The below commands read/write PR numbers to the queue.
 | `!sweeper`                     | Report how long before an automatic `!sweep` occurs.
 | `!clear`                       | Clear the entire queue.
 | `!meeting`                     | Begin/end Cuprate meetings. Issues/logs will be handled automatically after ending.
+| `!cancel <COUNT> [REASON]`     | Cancel Cuprate meetings. The current issue will be closed and a new issue will be opened.
 | `!agenda <ARRAY_OF_STRINGS>`   | Re-write the current Cuprate meeting's extra agenda items.
 | `!status`                      | Report `moo` status.
 | `!help`                        | Print all `moo` commands.
@@ -114,6 +115,3 @@ For configuration, see [`moo.toml`](moo.toml).
 | Database                  | `~/.local/share/moo/moo.json`
 | Database (previous state) | `~/.local/share/moo/moo.backup.json`
 | Config                    | `~/.config/moo/moo.toml`
-
-## Forking
-`moo` is hardcoded for Cuprate but it _probably_ works with any account in any room, just edit some of these [constants](https://github.com/Cuprate/moo/blob/2e2be1abecfac8c75a5a1942dae1f40d880f4756/src/constants.rs), and remove the `allowed_users` in `moo.toml`.
