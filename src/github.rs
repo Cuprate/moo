@@ -1,5 +1,7 @@
 //! TODO
 
+use std::num::NonZero;
+
 //---------------------------------------------------------------------------------------------------- Use
 use anyhow::anyhow;
 use reqwest::{Client, RequestBuilder};
@@ -121,8 +123,8 @@ pub async fn finish_cuprate_meeting(
     let client = build_client();
 
     let (issue, title) = find_cuprate_meeting_issue(&client, false).await?;
-    let logs = post_comment_in_issue(&client, issue, meeting_logs).await?;
-    let next_meeting = post_cuprate_meeting_issue(&client, title, issue).await?;
+    let logs = post_comment_in_issue(&client, issue, &meeting_logs).await?;
+    let next_meeting = post_cuprate_meeting_issue(&client, title, issue, None).await?;
     close_issue(&client, issue).await?;
 
     Ok((logs, next_meeting))
@@ -135,20 +137,36 @@ pub async fn finish_cuprate_meeting(
 #[instrument]
 #[inline]
 pub async fn cancel_cuprate_meeting(
+    count: NonZero<u8>,
     reason: Option<&str>,
-) -> Result<(String, String), anyhow::Error> {
+) -> Result<(Vec<String>, String), anyhow::Error> {
     let client = build_client();
-
     let reason = reason.unwrap_or("Unknown");
-
     let comment = format!("This meeting was canceled, reason: `{reason}`");
 
-    let (issue, title) = find_cuprate_meeting_issue(&client, false).await?;
-    post_comment_in_issue(&client, issue, comment).await?;
-    let next_meeting = post_cuprate_meeting_issue(&client, title, issue).await?;
-    close_issue(&client, issue).await?;
+    let mut canceled_meetings = vec![];
+    let mut next_meeting = String::new();
 
-    Ok((format!("{MONERO_META_GITHUB_ISSUE}/{issue}"), next_meeting))
+    for week_multiplier in 1..=count.get() {
+        let (issue, title) = find_cuprate_meeting_issue(&client, false).await?;
+
+        post_comment_in_issue(&client, issue, &comment).await?;
+
+        let next = post_cuprate_meeting_issue(
+            &client,
+            title,
+            issue,
+            NonZero::new(u64::from(week_multiplier)),
+        )
+        .await?;
+
+        close_issue(&client, issue).await?;
+
+        canceled_meetings.push(format!("{MONERO_META_GITHUB_ISSUE}/{issue}"));
+        next_meeting = next;
+    }
+
+    Ok((canceled_meetings, next_meeting))
 }
 
 /// TODO
@@ -223,6 +241,7 @@ pub async fn post_cuprate_meeting_issue(
     client: &Client,
     previous_meeting_title: String,
     last_issue: u64,
+    week_multiplier: Option<NonZero<u64>>,
 ) -> Result<String, anyhow::Error> {
     trace!("Posting Cuprate meeting issue on: {MONERO_META_GITHUB_ISSUE_API}");
 
@@ -234,7 +253,12 @@ pub async fn post_cuprate_meeting_issue(
             today = today - Days::new(1);
         }
 
-        let next = today + Days::new(7);
+        let next = if let Some(multiplier) = week_multiplier {
+            today + Days::new(7 * multiplier.get())
+        } else {
+            today + Days::new(7)
+        };
+
         next.format("%Y-%m-%d").to_string()
     };
 
@@ -316,7 +340,7 @@ pub async fn post_cuprate_meeting_issue(
 pub async fn post_comment_in_issue(
     client: &Client,
     issue: u64,
-    comment: String,
+    comment: &str,
 ) -> Result<String, anyhow::Error> {
     let url = format!("{MONERO_META_GITHUB_ISSUE_API}/{issue}/comments");
 
@@ -430,7 +454,7 @@ pub async fn edit_cuprate_meeting_agenda(new_items: Vec<String>) -> Result<Strin
     info!("New meeting agenda: {new_agenda}");
 
     let body = json!({
-        "body": format!("{TXT_CUPRATE_MEETING_PREFIX}\n{new_agenda}\n{TXT_CUPRATE_MEETING_SUFFIX}\n\nPrevious meeting with logs: #{last_issue}"),
+        "body": format!("{TXT_CUPRATE_MEETING_PREFIX}\n{new_agenda}\n{TXT_CUPRATE_MEETING_SUFFIX}\n\nPrevious meeting: #{last_issue}"),
     });
 
     info!("New meeting agenda: {body}");

@@ -404,14 +404,14 @@ impl Command {
             let mut msg = "Canceled meeting(s):\n\n".to_string();
             let mut next_meeting = String::new();
 
-            for _ in 0..count.get() {
-                match crate::github::cancel_cuprate_meeting(reason.as_deref()).await {
-                    Ok((canceled_url, next)) => {
-                        msg.push_str(&format!("- {canceled_url}\n"));
-                        next_meeting = next;
+            match crate::github::cancel_cuprate_meeting(count, reason.as_deref()).await {
+                Ok((canceled_urls, next)) => {
+                    for url in canceled_urls {
+                        msg.push_str(&format!("- {url}\n"));
                     }
-                    Err(e) => return RoomMessageEventContent::text_plain(e.to_string()),
+                    next_meeting = next;
                 }
+                Err(e) => return RoomMessageEventContent::text_plain(e.to_string()),
             }
 
             msg.push_str(&format!("\nNext meeting: {next_meeting}"));
