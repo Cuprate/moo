@@ -108,7 +108,7 @@ impl AddGithubHeaders for RequestBuilder {
 pub async fn current_meeting_url() -> Result<String, anyhow::Error> {
     let client = build_client();
     let (issue, _) = find_cuprate_meeting_issue(&client, false).await?;
-    Ok(format!("{MONERO_META_GITHUB_ISSUE_API}/{issue}"))
+    Ok(format!("{MONERO_META_GITHUB_ISSUE}/{issue}"))
 }
 
 /// TODO
