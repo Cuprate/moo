@@ -206,8 +206,9 @@ pub async fn cancel_cuprate_meeting(
 
         post_comment_in_issue(&client, issue, &comment).await?;
 
-        let next_title = create_title(next_meeting_details(&title)?);
-        let next_link = post_cuprate_meeting_issue(&client, title, issue, None).await?;
+        let (n, d) = next_meeting_details(&title)?;
+        let next_title = create_title(n, d);
+        let next_link = post_cuprate_meeting_issue(&client, next_title, issue, None).await?;
 
         close_issue(&client, issue).await?;
 
@@ -295,7 +296,7 @@ pub async fn post_cuprate_meeting_issue(
     trace!("Posting Cuprate meeting issue on: {MONERO_META_GITHUB_ISSUE_API}");
 
     let (next_meeting_number, next_meeting_date_iso_8601) =
-        next_meeting_details(&previous_meeting_title);
+        next_meeting_details(&previous_meeting_title)?;
     info!("Next meeting date: {next_meeting_date_iso_8601}");
 
     let title = create_title(next_meeting_number, next_meeting_date_iso_8601);
