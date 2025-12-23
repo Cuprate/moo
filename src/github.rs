@@ -28,6 +28,60 @@ fn build_client() -> Client {
         .expect("this can't error")
 }
 
+fn create_title(meeting_number: u64, meeting_date_iso_8601: String) -> String {
+    format!("Cuprate Meeting #{meeting_number} - Tuesday, {meeting_date_iso_8601}, UTC 18:00")
+}
+
+/// - Input: the current meeting title
+/// - Output: `(next_meeting_number, next_meeting_date_iso8601)`
+fn next_meeting_details(title: &str) -> Result<(u64, String), anyhow::Error> {
+    let next_meeting_date_iso_8601 = {
+        use chrono::{prelude::*, Days};
+        let mut today = Utc::now().date_naive();
+
+        while today.weekday() != CUPRATE_MEETING_WEEKDAY {
+            today = today - Days::new(1);
+        }
+
+        let next = today + Days::new(7);
+
+        next.format("%Y-%m-%d").to_string()
+    };
+
+    let next_meeting_number = {
+        let mut iter = title.split_whitespace();
+
+        let err = || anyhow!("Failed to parse meeting title: {title}");
+
+        if iter.next().is_none_or(|s| s != "Cuprate") {
+            return Err(err());
+        }
+
+        if iter.next().is_none_or(|s| s != "Meeting") {
+            return Err(err());
+        }
+
+        let Some(number_with_hash) = iter.next() else {
+            return Err(err());
+        };
+
+        let Some(number) = number_with_hash.get(1..) else {
+            return Err(err());
+        };
+
+        let Ok(number) = number.parse::<u64>() else {
+            return Err(err());
+        };
+
+        number + 1
+    };
+
+    Ok((
+        next_meeting_number,
+        create_title(next_meeting_number, next_meeting_date_iso_8601),
+    ))
+}
+
 //---------------------------------------------------------------------------------------------------- Event
 /// TODO
 ///
@@ -147,23 +201,18 @@ pub async fn cancel_cuprate_meeting(
     let mut canceled_meetings = vec![];
     let mut next_meeting = String::new();
 
-    for week_multiplier in 1..=count.get() {
+    for _ in 0..count.get() {
         let (issue, title) = find_cuprate_meeting_issue(&client, false).await?;
 
         post_comment_in_issue(&client, issue, &comment).await?;
 
-        let next = post_cuprate_meeting_issue(
-            &client,
-            title,
-            issue,
-            NonZero::new(u64::from(week_multiplier)),
-        )
-        .await?;
+        let next_title = create_title(next_meeting_details(&title)?);
+        let next_link = post_cuprate_meeting_issue(&client, title, issue, None).await?;
 
         close_issue(&client, issue).await?;
 
         canceled_meetings.push(format!("{MONERO_META_GITHUB_ISSUE}/{issue}"));
-        next_meeting = next;
+        next_meeting = next_link;
     }
 
     Ok((canceled_meetings, next_meeting))
@@ -245,57 +294,11 @@ pub async fn post_cuprate_meeting_issue(
 ) -> Result<String, anyhow::Error> {
     trace!("Posting Cuprate meeting issue on: {MONERO_META_GITHUB_ISSUE_API}");
 
-    let next_meeting_iso_8601 = {
-        use chrono::{prelude::*, Days};
-        let mut today = Utc::now().date_naive();
+    let (next_meeting_number, next_meeting_date_iso_8601) =
+        next_meeting_details(&previous_meeting_title);
+    info!("Next meeting date: {next_meeting_date_iso_8601}");
 
-        while today.weekday() != CUPRATE_MEETING_WEEKDAY {
-            today = today - Days::new(1);
-        }
-
-        let next = if let Some(multiplier) = week_multiplier {
-            today + Days::new(7 * multiplier.get())
-        } else {
-            today + Days::new(7)
-        };
-
-        next.format("%Y-%m-%d").to_string()
-    };
-
-    info!("Next meeting date: {next_meeting_iso_8601}");
-
-    let next_meeting_number = {
-        let mut iter = previous_meeting_title.split_whitespace();
-
-        let err = || anyhow!("Failed to parse previous meeting title: {previous_meeting_title}");
-
-        if iter.next().is_none_or(|s| s != "Cuprate") {
-            return Err(err());
-        }
-
-        if iter.next().is_none_or(|s| s != "Meeting") {
-            return Err(err());
-        }
-
-        let Some(number_with_hash) = iter.next() else {
-            return Err(err());
-        };
-
-        let Some(number) = number_with_hash.get(1..) else {
-            return Err(err());
-        };
-
-        let Ok(number) = number.parse::<u64>() else {
-            return Err(err());
-        };
-
-        number + 1
-    };
-
-    let title = format!(
-        "Cuprate Meeting #{next_meeting_number} - Tuesday, {next_meeting_iso_8601}, UTC 18:00"
-    );
-
+    let title = create_title(next_meeting_number, next_meeting_date_iso_8601);
     info!("Meeting title: {title}");
 
     let body = format!("{TXT_CUPRATE_MEETING_PREFIX}\n{TXT_CUPRATE_MEETING_SUFFIX}\n\nPrevious meeting: #{last_issue}");
