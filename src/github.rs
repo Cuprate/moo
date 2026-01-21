@@ -76,10 +76,7 @@ fn next_meeting_details(title: &str) -> Result<(u64, String), anyhow::Error> {
         number + 1
     };
 
-    Ok((
-        next_meeting_number,
-        create_title(next_meeting_number, next_meeting_date_iso_8601),
-    ))
+    Ok((next_meeting_number, next_meeting_date_iso_8601))
 }
 
 //---------------------------------------------------------------------------------------------------- Event
@@ -202,13 +199,11 @@ pub async fn cancel_cuprate_meeting(
     let mut next_meeting = String::new();
 
     for _ in 0..count.get() {
-        let (issue, title) = find_cuprate_meeting_issue(&client, false).await?;
+        let (issue, previous_title) = find_cuprate_meeting_issue(&client, false).await?;
 
         post_comment_in_issue(&client, issue, &comment).await?;
 
-        let (n, d) = next_meeting_details(&title)?;
-        let next_title = create_title(n, d);
-        let next_link = post_cuprate_meeting_issue(&client, next_title, issue, None).await?;
+        let next_link = post_cuprate_meeting_issue(&client, previous_title, issue, None).await?;
 
         close_issue(&client, issue).await?;
 
