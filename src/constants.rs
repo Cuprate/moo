@@ -193,12 +193,12 @@ Please comment on GitHub in advance of the meeting if you would like to propose 
 
 Main discussion topics:
 
-- Greetings
-- Updates: What is everyone working on?
-- Project: What is next for Cuprate?";
+1. Greetings
+2. Updates: What is everyone working on?
+3. Project: What is next for Cuprate?";
 
 /// TODO
-pub const TXT_CUPRATE_MEETING_SUFFIX: &str = "- Any other business";
+pub const TXT_CUPRATE_MEETING_SUFFIX: &str = "4. Any other business";
 
 /// TODO
 pub const TXT_MEETING_START_IDENT: &str = "Starting meeting";
